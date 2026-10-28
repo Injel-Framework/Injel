@@ -61,7 +61,7 @@ Application Context
 └── Optional integrations (database, logging, validation, ...)
 ```
 
-Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh), **Application Lifecycle** (Start/Stop, graceful shutdown, rollback) và **Configuration module** (nạp từ environment variables, struct tag `env`, default, required, isolated testing) cùng facade `App` đã được triển khai hoàn chỉnh với unit test và race detector. HTTP module là giai đoạn tiếp theo.
+Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh), **Application Lifecycle** (Start/Stop, graceful shutdown, rollback), **Configuration module** (nạp từ environment variables, struct tag `env`, default, required, isolated testing) và **HTTP module** (dựa trên `net/http` với router sandbox pre-validation, middleware chain, health endpoint và lifecycle hooks) cùng facade `App` đã được triển khai hoàn chỉnh với unit test và race detector.
 
 ## 6. Phạm vi MVP
 
@@ -73,16 +73,17 @@ Application Context
 - Interface binding tường minh (`ProvideAs`, `Bind`) dùng chung singleton instance.
 - Application Lifecycle: quản lý `Start`/`Stop`, hook `OnStart`/`OnStop`, rollback khi start lỗi và bảo toàn lỗi bằng `errors.Join`.
 - Configuration module: struct tag `env`, giá trị mặc định, kiểm tra bắt buộc, chuyển đổi kiểu dữ liệu, TextUnmarshaler, và tích hợp `ProvideConfig` vào DI container.
+- HTTP server module: router mỏng dựa trên `net/http` (Go 1.22+), router pre-validation, middleware chain (`RequestID`, `Recovery`, `Logging`), health check endpoint và tích hợp lifecycle hooks (`OnStart`/`OnStop`).
 - Phát hiện provider trùng, dependency thiếu, chu trình dependency và lỗi cấu hình trước khi chạy.
 - Lỗi khởi tạo có tên provider, kiểu và đường đi dependency; hỗ trợ `errors.Is`/`errors.As`.
 - Unit test cho luồng thành công, lỗi cốt lõi, concurrency và thread-safety.
-- Ví dụ chạy được bằng `go run`.
-- Tài liệu quickstart, roadmap và các ADR (0001, 0002, 0003, 0004).
+- Ví dụ chạy được bằng `go run` (`examples/basic`, `examples/http-api`).
+- Tài liệu quickstart, roadmap và các ADR (0001, 0002, 0003, 0004, 0005).
 
 ### Chưa làm trong MVP
 
 - ORM hoặc transaction framework riêng.
-- Router HTTP hoàn chỉnh (trước mắt dùng `net/http`).
+- Framework router bên ngoài (Gin, Echo, Chi, Fiber).
 - Annotation giống Java (`@Bean`, `@Service`, `@Autowired`).
 - CLI sinh toàn bộ ứng dụng.
 - Auto-configuration phức tạp, profile, Starter lớn.

@@ -39,7 +39,7 @@ Dự án đang ở giai đoạn đầu. Không có tính năng nào dưới đâ
 | Interface binding (`ProvideAs`, `Bind`) | Implemented | Singleton dùng chung giữa concrete type và interface |
 | Application lifecycle (start/stop, rollback, graceful shutdown) | Implemented | Thứ tự topo theo đồ thị dependency; rollback khi start lỗi |
 | Configuration từ environment | Implemented | Struct tag `env`, default, required, type conversion, isolated test |
-| HTTP module trên `net/http` | Planned | Chưa triển khai |
+| HTTP module trên `net/http` | Implemented | Router sandbox pre-validation, middleware chain, OnStart/OnStop lifecycle, health check |
 | CLI / code generation | Planned | Chưa triển khai |
 | Tích hợp database, Redis, broker | Planned | Ngoài phạm vi MVP hiện tại |
 
@@ -58,7 +58,11 @@ go test -race ./...
 Chạy ví dụ:
 
 ```bash
+# Ví dụ cơ bản về DI, Configuration và Lifecycle
 go run ./examples/basic
+
+# Ví dụ REST API hoàn chỉnh với HTTP server, middleware và DI
+go run ./examples/http-api
 ```
 
 ## Ví dụ sử dụng
@@ -170,13 +174,22 @@ injel/
 │       ├── 0001-dependency-injection.md
 │       ├── 0002-interface-binding.md
 │       ├── 0003-application-lifecycle.md
-│       └── 0004-configuration.md
-└── examples/
-    └── basic/
-        └── main.go
+│       ├── 0004-configuration.md
+│       └── 0005-http-module.md
+├── examples/
+│   ├── basic/
+│   │   └── main.go
+│   └── http-api/
+│       └── main.go
+└── httpserver/            # HTTP server & routing module dựa trên net/http
+    ├── errors.go
+    ├── middleware.go
+    ├── router.go
+    ├── server.go
+    └── server_test.go
 ```
 
-## Giới hạn đã biết của DI & Configuration hiện tại
+## Giới hạn đã biết của các module hiện tại
 
 - Mỗi kiểu chỉ có một provider (singleton theo kiểu); chưa hỗ trợ named provider hoặc scope động.
 - Provider có thể có nhiều tham số và trả về `T` hoặc `(T, error)`.
@@ -184,6 +197,7 @@ injel/
 - Interface binding yêu cầu khai báo tường minh qua `ProvideAs` hoặc `Bind`.
 - Configuration tập trung vào Environment variables và struct tag `env`; chưa tự động đọc file YAML/JSON hay remote secrets.
 - Constructor không nên gọi ngược lại container trong quá trình resolve.
+- HTTP server tận dụng `net/http.ServeMux` tiêu chuẩn của Go 1.22+ (method matching, path parameters); chưa tích hợp request body auto-validation hoặc OpenAPI schema generator.
 
 ## Module path
 
@@ -201,3 +215,4 @@ module github.com/Injel-Framework/Injel
 - [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — quyết định kiến trúc Interface Binding.
 - [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — quyết định kiến trúc Application Lifecycle.
 - [`docs/adr/0004-configuration.md`](docs/adr/0004-configuration.md) — quyết định kiến trúc Configuration Module.
+- [`docs/adr/0005-http-module.md`](docs/adr/0005-http-module.md) — quyết định kiến trúc HTTP Server & REST API Module.
