@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Injel-Framework/Injel/config"
 )
 
 type appConfig struct {
@@ -476,5 +478,235 @@ func TestAppProvideAsAndBind(t *testing.T) {
 	}
 	if store != concrete {
 		t.Fatal("interface and concrete did not return identical singleton instance")
+	}
+}
+
+type onlyStopComponent struct {
+	tr *lifecycleTracker
+}
+
+func (c *onlyStopComponent) OnStop(ctx context.Context) error {
+	c.tr.record("only_stop", "stop")
+	return nil
+}
+
+func TestLifecycleComponentWithOnlyStopHook(t *testing.T) {
+	tracker := &lifecycleTracker{}
+	app := New()
+
+	if err := app.Provide(func() *onlyStopComponent {
+		return &onlyStopComponent{tr: tracker}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Start(context.Background()); err != nil {
+		t.Fatalf("Start failed: %v", err)
+	}
+	if err := app.Stop(context.Background()); err != nil {
+		t.Fatalf("Stop failed: %v", err)
+	}
+
+	want := []string{"only_stop:stop"}
+	got := tracker.list()
+	if len(got) != 1 || got[0] != want[0] {
+		t.Fatalf("got events %v, want %v", got, want)
+	}
+}
+
+type resourceWithStop struct {
+	tr *lifecycleTracker
+}
+
+func (r *resourceWithStop) OnStop(ctx context.Context) error {
+	r.tr.record("resource", "cleanup")
+	return nil
+}
+
+type failingProviderTarget struct{}
+
+func TestLifecycleRollbackWhenSubsequentProviderFailsToResolve(t *testing.T) {
+	tracker := &lifecycleTracker{}
+	app := New()
+
+	// Provider 1 creates a resource successfully
+	if err := app.Provide(func() *resourceWithStop {
+		tracker.record("resource", "constructed")
+		return &resourceWithStop{tr: tracker}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Provider 2 fails during construction
+	if err := app.Provide(func(r *resourceWithStop) (*failingProviderTarget, error) {
+		return nil, errors.New("provider 2 resolution failure")
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	err := app.Start(context.Background())
+	if err == nil {
+		t.Fatal("expected start to fail due to provider 2 error")
+	}
+	if !strings.Contains(err.Error(), "provider 2 resolution failure") {
+		t.Fatalf("expected resolution failure in error, got: %v", err)
+	}
+	if app.State() != StateFailed {
+		t.Fatalf("state = %s, want %s", app.State(), StateFailed)
+	}
+
+	// Verify that resourceWithStop was cleaned up via OnStop
+	events := tracker.list()
+	want := []string{"resource:constructed", "resource:cleanup"}
+	if len(events) != 2 || events[0] != want[0] || events[1] != want[1] {
+		t.Fatalf("got events %v, want %v", events, want)
+	}
+}
+
+type cancellableStartComponent struct {
+	tr     *lifecycleTracker
+	cancel context.CancelFunc
+}
+
+func (c *cancellableStartComponent) OnStart(ctx context.Context) error {
+	c.tr.record("cancellable", "start")
+	c.cancel() // Cancel context during startup
+	return nil
+}
+
+func (c *cancellableStartComponent) OnStop(ctx context.Context) error {
+	c.tr.record("cancellable", "stop")
+	return nil
+}
+
+type secondComponent struct {
+	tr *lifecycleTracker
+}
+
+func (s *secondComponent) OnStart(ctx context.Context) error {
+	s.tr.record("second", "start")
+	return nil
+}
+
+func (s *secondComponent) OnStop(ctx context.Context) error {
+	s.tr.record("second", "stop")
+	return nil
+}
+
+func TestLifecycleCleanupWhenStartupContextCancelled(t *testing.T) {
+	tracker := &lifecycleTracker{}
+	app := New()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	if err := app.Provide(func() *cancellableStartComponent {
+		return &cancellableStartComponent{tr: tracker, cancel: cancel}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Provide(func(c *cancellableStartComponent) *secondComponent {
+		return &secondComponent{tr: tracker}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	err := app.Start(ctx)
+	if err == nil {
+		t.Fatal("expected startup error due to cancelled context")
+	}
+	if !strings.Contains(err.Error(), "cancelled") {
+		t.Fatalf("expected cancellation error, got: %v", err)
+	}
+	if app.State() != StateFailed {
+		t.Fatalf("state = %s, want %s", app.State(), StateFailed)
+	}
+
+	// cancellable started, then context was cancelled before secondComponent could start.
+	// rollback must call cancellable:stop even though context was cancelled!
+	events := tracker.list()
+	want := []string{"cancellable:start", "cancellable:stop"}
+	if len(events) != 2 || events[0] != want[0] || events[1] != want[1] {
+		t.Fatalf("got events %v, want %v", events, want)
+	}
+}
+
+type diAppConfig struct {
+	Port int    `env:"PORT,default=8080"`
+	DSN  string `env:"DB_DSN,required"`
+}
+
+type diServiceWithConfig struct {
+	cfg *diAppConfig
+}
+
+func newDIServiceWithConfig(cfg *diAppConfig) *diServiceWithConfig {
+	return &diServiceWithConfig{cfg: cfg}
+}
+
+func TestProvideConfigIntegrationWithDI(t *testing.T) {
+	app := New()
+
+	env := map[string]string{
+		"DB_DSN": "sqlite://test.db",
+	}
+
+	if err := ProvideConfig[diAppConfig](app, config.WithMap(env)); err != nil {
+		t.Fatalf("ProvideConfig: %v", err)
+	}
+	if err := app.Provide(newDIServiceWithConfig); err != nil {
+		t.Fatalf("Provide service: %v", err)
+	}
+
+	if err := app.Start(context.Background()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer app.Stop(context.Background())
+
+	svc, err := Get[*diServiceWithConfig](app)
+	if err != nil {
+		t.Fatalf("Get service: %v", err)
+	}
+	if svc.cfg == nil || svc.cfg.Port != 8080 || svc.cfg.DSN != "sqlite://test.db" {
+		t.Fatalf("unexpected config in service: %+v", svc.cfg)
+	}
+
+	// Value can also be resolved directly
+	val, err := Get[diAppConfig](app)
+	if err != nil {
+		t.Fatalf("Get diAppConfig value: %v", err)
+	}
+	if val.Port != 8080 || val.DSN != "sqlite://test.db" {
+		t.Fatalf("unexpected value: %+v", val)
+	}
+}
+
+func TestProvideConfigFailureFailsStartup(t *testing.T) {
+	app := New()
+
+	// Missing required DB_DSN
+	if err := ProvideConfig[diAppConfig](app, config.WithMap(map[string]string{})); err != nil {
+		t.Fatalf("ProvideConfig: %v", err)
+	}
+	if err := app.Provide(newDIServiceWithConfig); err != nil {
+		t.Fatalf("Provide service: %v", err)
+	}
+
+	err := app.Start(context.Background())
+	if err == nil {
+		t.Fatal("expected startup to fail when required config is missing")
+	}
+	if !strings.Contains(err.Error(), "DB_DSN") {
+		t.Fatalf("expected DB_DSN error message, got: %v", err)
+	}
+	if app.State() != StateFailed {
+		t.Fatalf("state = %s, want %s", app.State(), StateFailed)
+	}
+}
+
+func TestProvideConfigNilApp(t *testing.T) {
+	var app *App
+	err := ProvideConfig[diAppConfig](app)
+	if err == nil {
+		t.Fatal("expected error providing config to nil app")
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/Injel-Framework/Injel/config"
 	"github.com/Injel-Framework/Injel/di"
 )
 
@@ -186,8 +187,12 @@ func (a *App) Start(ctx context.Context) error {
 
 	// 1. Resolve all dependencies eagerly in dependency order.
 	if err := a.container.ResolveAll(); err != nil {
-		a.state = StateFailed
-		return fmt.Errorf("injel: resolution failed: %w", err)
+		for _, inst := range a.container.ResolvedInstances() {
+			if stopper, ok := inst.(StopHook); ok {
+				a.startedHooks = append(a.startedHooks, stopper)
+			}
+		}
+		return a.rollback(fmt.Errorf("injel: resolution failed: %w", err))
 	}
 
 	// 2. Discover and invoke StartHooks in dependency order.
@@ -308,4 +313,33 @@ func Bind[Target any, Source any](a *App) error {
 		return fmt.Errorf("injel: cannot bind in a nil app")
 	}
 	return di.Bind[Target, Source](a.container)
+}
+
+// ProvideConfig loads configuration into type T using the config package,
+// and registers the constructed configuration value as a singleton provider in the application.
+//
+// If T is a struct type, ProvideConfig registers both T and *T providers so consumers can
+// inject either by value or by pointer.
+// If loading the configuration fails during startup resolution, app.Start fails immediately.
+func ProvideConfig[T any](a *App, opts ...config.Option) error {
+	if a == nil {
+		return fmt.Errorf("injel: cannot provide config to a nil app")
+	}
+
+	typ := reflect.TypeFor[T]()
+	if typ.Kind() == reflect.Pointer {
+		return a.Provide(func() (T, error) {
+			return config.Load[T](opts...)
+		})
+	}
+
+	if err := a.Provide(func() (T, error) {
+		return config.Load[T](opts...)
+	}); err != nil {
+		return err
+	}
+
+	return a.Provide(func(cfg T) *T {
+		return &cfg
+	})
 }
