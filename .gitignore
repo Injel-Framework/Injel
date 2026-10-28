@@ -1,0 +1,48 @@
+# Go build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.tmp
+
+# Coverage and profiling
+coverage.out
+coverage.html
+profile.cov
+cpu.prof
+mem.prof
+
+# Local database and runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Local Go workspace and vendor
+go.work
+go.work.sum
+/vendor/
+
+# Historical planning documents (source DOCX files kept locally)
+/documents/
