@@ -38,7 +38,7 @@ Dự án đang ở giai đoạn đầu. Không có tính năng nào dưới đâ
 | Constructor trả `error` | Implemented | Lỗi được bọc với tên provider và kiểu kết quả |
 | Interface binding (`ProvideAs`, `Bind`) | Implemented | Singleton dùng chung giữa concrete type và interface |
 | Application lifecycle (start/stop, rollback, graceful shutdown) | Implemented | Thứ tự topo theo đồ thị dependency; rollback khi start lỗi |
-| Configuration từ environment | Planned | Chưa triển khai |
+| Configuration từ environment | Implemented | Struct tag `env`, default, required, type conversion, isolated test |
 | HTTP module trên `net/http` | Planned | Chưa triển khai |
 | CLI / code generation | Planned | Chưa triển khai |
 | Tích hợp database, Redis, broker | Planned | Ngoài phạm vi MVP hiện tại |
@@ -75,7 +75,7 @@ import (
 )
 
 type Config struct {
-	DSN string
+	DSN string `env:"DATABASE_URL,default=file:injel.db"`
 }
 
 type UserRepository struct {
@@ -96,10 +96,6 @@ type UserService struct {
 	repo *UserRepository
 }
 
-func NewConfig() *Config {
-	return &Config{DSN: "file:injel.db"}
-}
-
 func NewUserRepository(cfg *Config) *UserRepository {
 	return &UserRepository{dsn: cfg.DSN}
 }
@@ -114,8 +110,12 @@ func NewUserService(repo *UserRepository) (*UserService, error) {
 func main() {
 	app := injel.New()
 
+	// Nạp cấu hình từ biến môi trường (hoặc giá trị mặc định file:injel.db)
+	if err := injel.ProvideConfig[Config](app); err != nil {
+		log.Fatalf("register config provider: %v", err)
+	}
+
 	for _, provider := range []any{
-		NewConfig,
 		NewUserRepository,
 		NewUserService,
 	} {
@@ -126,7 +126,7 @@ func main() {
 
 	ctx := context.Background()
 
-	// Start kiểm tra graph, resolve dependency theo thứ tự topo và chạy OnStart hook.
+	// Start kiểm tra graph, nạp config, resolve dependency theo thứ tự topo và chạy OnStart hook.
 	if err := app.Start(ctx); err != nil {
 		log.Fatalf("start application: %v", err)
 	}
@@ -152,8 +152,12 @@ func main() {
 injel/
 ├── README.md
 ├── go.mod
-├── injel.go               # Facade công khai: App, New, Get, Start, Stop, Lifecycle
+├── injel.go               # Facade công khai: App, New, Get, Start, Stop, ProvideConfig
 ├── injel_test.go
+├── config/                # Module cấu hình từ environment variables
+│   ├── config.go
+│   ├── errors.go
+│   └── config_test.go
 ├── di/                    # DI engine công khai
 │   ├── container.go
 │   ├── provider.go
@@ -165,18 +169,20 @@ injel/
 │   └── adr/
 │       ├── 0001-dependency-injection.md
 │       ├── 0002-interface-binding.md
-│       └── 0003-application-lifecycle.md
+│       ├── 0003-application-lifecycle.md
+│       └── 0004-configuration.md
 └── examples/
     └── basic/
         └── main.go
 ```
 
-## Giới hạn đã biết của DI & Lifecycle hiện tại
+## Giới hạn đã biết của DI & Configuration hiện tại
 
 - Mỗi kiểu chỉ có một provider (singleton theo kiểu); chưa hỗ trợ named provider hoặc scope động.
 - Provider có thể có nhiều tham số và trả về `T` hoặc `(T, error)`.
 - Reflection chỉ diễn ra khi resolve ở startup, không diễn ra trên mỗi request.
 - Interface binding yêu cầu khai báo tường minh qua `ProvideAs` hoặc `Bind`.
+- Configuration tập trung vào Environment variables và struct tag `env`; chưa tự động đọc file YAML/JSON hay remote secrets.
 - Constructor không nên gọi ngược lại container trong quá trình resolve.
 
 ## Module path
@@ -194,3 +200,4 @@ module github.com/Injel-Framework/Injel
 - [`docs/adr/0001-dependency-injection.md`](docs/adr/0001-dependency-injection.md) — quyết định kiến trúc DI.
 - [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — quyết định kiến trúc Interface Binding.
 - [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — quyết định kiến trúc Application Lifecycle.
+- [`docs/adr/0004-configuration.md`](docs/adr/0004-configuration.md) — quyết định kiến trúc Configuration Module.

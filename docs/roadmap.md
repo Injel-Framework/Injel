@@ -11,7 +11,7 @@ Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành.
 | 0 | Tài liệu nền tảng, module Go, cấu trúc repository | Implemented |
 | 1 | DI core: provider, singleton, validation, lỗi, interface binding | Implemented |
 | 2 | Application lifecycle: start/stop, graceful shutdown, rollback | Implemented |
-| 3 | Configuration từ environment | Planned |
+| 3 | Configuration từ environment | Implemented |
 | 4 | HTTP module trên `net/http` | Planned |
 | 5 | CLI và code generation | Planned / cần kiểm chứng |
 | 6 | Tích hợp tùy chọn: database, logging, validation | Planned |
@@ -73,13 +73,19 @@ Còn mở:
 
 **Mục tiêu:** cấu hình thống nhất, bắt đầu từ environment.
 
-- Đọc biến môi trường với tên rõ ràng.
-- Giá trị mặc định và lỗi thiếu cấu hình bắt buộc.
-- Không tự động đọc file, secret manager hoặc remote config trong bản đầu.
-- Không che giấu precedence; tài liệu hóa thứ tự ưu tiên.
-- Test cho giá trị mặc định, thiếu biến, sai kiểu và override.
+Đã có:
 
-**Chưa làm:** profile phức tạp, auto-refresh, hệ thống starter.
+- Module `config` độc lập với struct tag `env:"KEY,opt..."`.
+- Hỗ trợ giá trị mặc định (`default=...`), biến bắt buộc (`required`), biến rỗng vs không tồn tại.
+- Hỗ trợ đầy đủ các kiểu dữ liệu: string, bool, số nguyên (int, uint các kích thước), số thực (float32/64), `time.Duration`, slices, nested structs và `encoding.TextUnmarshaler`.
+- Hệ thống lỗi có ngữ cảnh: `MissingRequiredError`, `ConversionError`, `InvalidTagError`, `UnsupportedTypeError`, `InvalidTargetError`.
+- Hỗ trợ kiểm thử cô lập 100% với `config.WithMap` và `config.WithLookup`.
+- Tích hợp mượt mà vào DI qua `injel.ProvideConfig[T](app, opts...)` với fail-fast ở startup.
+- Bộ test bao phủ tất cả trường hợp hợp lệ, lỗi, override và tích hợp DI.
+
+**Trạng thái:** hoàn thành.
+
+**Chưa làm:** profile phức tạp, auto-refresh, đọc file YAML/JSON, secret manager ngoài.
 
 ## Giai đoạn 4 — HTTP
 

@@ -61,7 +61,7 @@ Application Context
 └── Optional integrations (database, logging, validation, ...)
 ```
 
-Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh) và **Application Lifecycle** (Start/Stop, graceful shutdown, rollback) cùng facade `App` đã được triển khai hoàn chỉnh với unit test và race detector. Configuration và HTTP module là các giai đoạn tiếp theo.
+Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh), **Application Lifecycle** (Start/Stop, graceful shutdown, rollback) và **Configuration module** (nạp từ environment variables, struct tag `env`, default, required, isolated testing) cùng facade `App` đã được triển khai hoàn chỉnh với unit test và race detector. HTTP module là giai đoạn tiếp theo.
 
 ## 6. Phạm vi MVP
 
@@ -72,11 +72,12 @@ Application Context
 - Singleton theo kiểu trong phạm vi ứng dụng.
 - Interface binding tường minh (`ProvideAs`, `Bind`) dùng chung singleton instance.
 - Application Lifecycle: quản lý `Start`/`Stop`, hook `OnStart`/`OnStop`, rollback khi start lỗi và bảo toàn lỗi bằng `errors.Join`.
-- Phát hiện provider trùng, dependency thiếu, chu trình dependency trước khi chạy.
+- Configuration module: struct tag `env`, giá trị mặc định, kiểm tra bắt buộc, chuyển đổi kiểu dữ liệu, TextUnmarshaler, và tích hợp `ProvideConfig` vào DI container.
+- Phát hiện provider trùng, dependency thiếu, chu trình dependency và lỗi cấu hình trước khi chạy.
 - Lỗi khởi tạo có tên provider, kiểu và đường đi dependency; hỗ trợ `errors.Is`/`errors.As`.
 - Unit test cho luồng thành công, lỗi cốt lõi, concurrency và thread-safety.
 - Ví dụ chạy được bằng `go run`.
-- Tài liệu quickstart, roadmap và các ADR (0001, 0002, 0003).
+- Tài liệu quickstart, roadmap và các ADR (0001, 0002, 0003, 0004).
 
 ### Chưa làm trong MVP
 
