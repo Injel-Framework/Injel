@@ -710,3 +710,109 @@ func TestProvideConfigNilApp(t *testing.T) {
 		t.Fatal("expected error providing config to nil app")
 	}
 }
+
+func TestProvideConfigPointerAndValueSemantics(t *testing.T) {
+	app := New()
+	env := map[string]string{"DB_DSN": "sqlite://test.db"}
+
+	if err := ProvideConfig[diAppConfig](app, config.WithMap(env)); err != nil {
+		t.Fatalf("ProvideConfig: %v", err)
+	}
+
+	// Two separate consumers injecting *diAppConfig
+	type consumerA struct{ cfg *diAppConfig }
+	type consumerB struct{ cfg *diAppConfig }
+
+	if err := app.Provide(func(cfg *diAppConfig) *consumerA { return &consumerA{cfg: cfg} }); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Provide(func(cfg *diAppConfig) *consumerB { return &consumerB{cfg: cfg} }); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Start(context.Background()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer app.Stop(context.Background())
+
+	a, err := Get[*consumerA](app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := Get[*consumerB](app)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify exact pointer equality (same canonical singleton instance)
+	if a.cfg != b.cfg {
+		t.Fatal("consumerA and consumerB did not receive identical *diAppConfig pointer instance")
+	}
+
+	// Also verify value injection
+	val, err := Get[diAppConfig](app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if val.DSN != "sqlite://test.db" || val.Port != 8080 {
+		t.Fatalf("unexpected value: %+v", val)
+	}
+}
+
+func TestProvideConfigPointerDirectly(t *testing.T) {
+	app := New()
+	env := map[string]string{"DB_DSN": "sqlite://test.db"}
+
+	if err := ProvideConfig[*diAppConfig](app, config.WithMap(env)); err != nil {
+		t.Fatalf("ProvideConfig[*diAppConfig]: %v", err)
+	}
+
+	if err := app.Start(context.Background()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer app.Stop(context.Background())
+
+	ptr, err := Get[*diAppConfig](app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	val, err := Get[diAppConfig](app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ptr.DSN != val.DSN || ptr.Port != val.Port {
+		t.Fatal("pointer and value fields do not match")
+	}
+}
+
+func TestProvideConfigDuplicateRegistration(t *testing.T) {
+	app := New()
+	if err := ProvideConfig[diAppConfig](app); err != nil {
+		t.Fatal(err)
+	}
+
+	// Second registration of same config type must return duplicate error
+	err := ProvideConfig[diAppConfig](app)
+	if err == nil {
+		t.Fatal("expected duplicate provider error on second ProvideConfig")
+	}
+}
+
+func TestProvideConfigInvalidNonStructType(t *testing.T) {
+	app := New()
+	err := ProvideConfig[int](app)
+	if err == nil {
+		t.Fatal("expected error providing non-struct type to ProvideConfig")
+	}
+	if !strings.Contains(err.Error(), "must be a struct") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+
+	err = ProvideConfig[*int](app)
+	if err == nil {
+		t.Fatal("expected error providing pointer to non-struct type to ProvideConfig")
+	}
+	if !strings.Contains(err.Error(), "must be a struct") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
