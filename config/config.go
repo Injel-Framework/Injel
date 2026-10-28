@@ -224,18 +224,46 @@ func parseTag(fieldName, tagStr string) (*fieldTag, error) {
 	for i < len(parts) {
 		part := strings.TrimSpace(parts[i])
 		if part == "required" {
+			if ft.required {
+				return nil, &InvalidTagError{
+					Field:  fieldName,
+					Tag:    tagStr,
+					Reason: "duplicate option \"required\"",
+				}
+			}
 			ft.required = true
 			i++
 		} else if strings.HasPrefix(part, "default=") {
+			if ft.hasDefault {
+				return nil, &InvalidTagError{
+					Field:  fieldName,
+					Tag:    tagStr,
+					Reason: "duplicate option \"default\"",
+				}
+			}
 			ft.hasDefault = true
 			defaultParts := []string{strings.TrimPrefix(part, "default=")}
 			i++
 			for i < len(parts) {
 				trimmed := strings.TrimSpace(parts[i])
 				if trimmed == "required" {
+					if ft.required {
+						return nil, &InvalidTagError{
+							Field:  fieldName,
+							Tag:    tagStr,
+							Reason: "duplicate option \"required\"",
+						}
+					}
 					ft.required = true
 					i++
 					break
+				}
+				if strings.HasPrefix(trimmed, "default=") {
+					return nil, &InvalidTagError{
+						Field:  fieldName,
+						Tag:    tagStr,
+						Reason: "duplicate option \"default\"",
+					}
 				}
 				defaultParts = append(defaultParts, parts[i])
 				i++
@@ -272,7 +300,27 @@ func implementsTextUnmarshaler(val reflect.Value) bool {
 }
 
 func setFieldValue(val reflect.Value, raw, key, fieldName string) error {
-	// 1. TextUnmarshaler support
+	// 1. Pointer support
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			val.Set(reflect.New(val.Type().Elem()))
+		}
+		if unmarshaler, ok := val.Interface().(encoding.TextUnmarshaler); ok {
+			if err := unmarshaler.UnmarshalText([]byte(raw)); err != nil {
+				return &ConversionError{
+					Key:        key,
+					Value:      raw,
+					TargetType: val.Type(),
+					Field:      fieldName,
+					Err:        err,
+				}
+			}
+			return nil
+		}
+		return setFieldValue(val.Elem(), raw, key, fieldName)
+	}
+
+	// 2. TextUnmarshaler support
 	if val.CanAddr() {
 		if unmarshaler, ok := val.Addr().Interface().(encoding.TextUnmarshaler); ok {
 			if err := unmarshaler.UnmarshalText([]byte(raw)); err != nil {
@@ -287,8 +335,20 @@ func setFieldValue(val reflect.Value, raw, key, fieldName string) error {
 			return nil
 		}
 	}
+	if unmarshaler, ok := val.Interface().(encoding.TextUnmarshaler); ok {
+		if err := unmarshaler.UnmarshalText([]byte(raw)); err != nil {
+			return &ConversionError{
+				Key:        key,
+				Value:      raw,
+				TargetType: val.Type(),
+				Field:      fieldName,
+				Err:        err,
+			}
+		}
+		return nil
+	}
 
-	// 2. time.Duration
+	// 3. time.Duration
 	if val.Type() == durationType {
 		d, err := time.ParseDuration(raw)
 		if err != nil {

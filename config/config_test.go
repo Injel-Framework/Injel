@@ -329,3 +329,70 @@ func TestTextUnmarshalerSupport(t *testing.T) {
 		t.Fatalf("IP = %v, want 10.0.0.1", cfg.IP)
 	}
 }
+
+type pointerConfig struct {
+	Port  *int    `env:"PORT,default=8080"`
+	Host  *string `env:"HOST,default=localhost"`
+	IP    *net.IP `env:"IP,default=127.0.0.1"`
+	Unset *string `env:"UNSET"`
+}
+
+func TestPointerFields(t *testing.T) {
+	// 1. With defaults
+	cfg, err := Load[pointerConfig](WithMap(nil))
+	if err != nil {
+		t.Fatalf("Load pointerConfig failed: %v", err)
+	}
+	if cfg.Port == nil || *cfg.Port != 8080 {
+		t.Fatalf("Port = %v, want 8080", cfg.Port)
+	}
+	if cfg.Host == nil || *cfg.Host != "localhost" {
+		t.Fatalf("Host = %v, want localhost", cfg.Host)
+	}
+	if cfg.IP == nil || cfg.IP.String() != "127.0.0.1" {
+		t.Fatalf("IP = %v, want 127.0.0.1", cfg.IP)
+	}
+	if cfg.Unset != nil {
+		t.Fatalf("Unset = %v, want nil", cfg.Unset)
+	}
+
+	// 2. Overrides
+	env := map[string]string{
+		"PORT":  "9000",
+		"HOST":  "remote",
+		"IP":    "10.0.0.2",
+		"UNSET": "now-set",
+	}
+	cfg, err = Load[pointerConfig](WithMap(env))
+	if err != nil {
+		t.Fatalf("Load pointerConfig override failed: %v", err)
+	}
+	if *cfg.Port != 9000 || *cfg.Host != "remote" || cfg.IP.String() != "10.0.0.2" || *cfg.Unset != "now-set" {
+		t.Fatalf("unexpected overrides: %+v", cfg)
+	}
+}
+
+func TestDuplicateTagOptions(t *testing.T) {
+	type dupRequiredConfig struct {
+		Val string `env:"VAL,required,required"`
+	}
+	_, err := Load[dupRequiredConfig](WithMap(nil))
+	if err == nil {
+		t.Fatal("expected error on duplicate required option")
+	}
+	var tagErr *InvalidTagError
+	if !errors.As(err, &tagErr) || !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("expected duplicate option InvalidTagError, got: %v", err)
+	}
+
+	type dupDefaultConfig struct {
+		Val string `env:"VAL,default=1,default=2"`
+	}
+	_, err = Load[dupDefaultConfig](WithMap(nil))
+	if err == nil {
+		t.Fatal("expected error on duplicate default option")
+	}
+	if !errors.As(err, &tagErr) || !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("expected duplicate option InvalidTagError, got: %v", err)
+	}
+}
