@@ -15,6 +15,26 @@ type contextKey string
 
 const requestIDContextKey contextKey = "injel_request_id"
 
+// maxRequestIDLength defines the maximum allowable length for an incoming X-Request-ID header.
+const maxRequestIDLength = 128
+
+// isValidRequestID checks whether an incoming request ID is within length limits
+// and contains only safe ASCII characters (alphanumeric, hyphen, underscore, period, colon).
+func isValidRequestID(id string) bool {
+	if len(id) == 0 || len(id) > maxRequestIDLength {
+		return false
+	}
+	for i := 0; i < len(id); i++ {
+		c := id[i]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '-' || c == '_' || c == '.' || c == ':' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 // Middleware defines a standard HTTP middleware function.
 type Middleware func(http.Handler) http.Handler
 
@@ -43,7 +63,8 @@ func defaultIDGenerator() string {
 }
 
 // RequestID returns a middleware that ensures every request has an X-Request-ID header.
-// If an existing X-Request-ID is present in the request headers, it is preserved.
+// If a valid X-Request-ID is present in the request headers (non-empty, safe characters, <= 128 bytes),
+// it is preserved. Otherwise, a new request ID is generated.
 func RequestID(generator ...func() string) Middleware {
 	gen := defaultIDGenerator
 	if len(generator) > 0 && generator[0] != nil {
@@ -53,7 +74,7 @@ func RequestID(generator ...func() string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			reqID := r.Header.Get("X-Request-ID")
-			if reqID == "" {
+			if !isValidRequestID(reqID) {
 				reqID = gen()
 			}
 
@@ -71,6 +92,13 @@ type responseWriterTracker struct {
 	written    bool
 }
 
+func wrapResponseWriter(w http.ResponseWriter) *responseWriterTracker {
+	if tracker, ok := w.(*responseWriterTracker); ok {
+		return tracker
+	}
+	return &responseWriterTracker{ResponseWriter: w, statusCode: http.StatusOK}
+}
+
 func (rw *responseWriterTracker) WriteHeader(code int) {
 	if !rw.written {
 		rw.statusCode = code
@@ -86,6 +114,12 @@ func (rw *responseWriterTracker) Write(b []byte) (int, error) {
 	return rw.ResponseWriter.Write(b)
 }
 
+func (rw *responseWriterTracker) Flush() {
+	if f, ok := rw.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 // Recovery returns a middleware that catches panics in downstream handlers,
 // logs them if a logger is provided, and returns a 500 Internal Server Error response.
 func Recovery(logger ...func(format string, args ...any)) Middleware {
@@ -96,12 +130,17 @@ func Recovery(logger ...func(format string, args ...any)) Middleware {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tracker := &responseWriterTracker{ResponseWriter: w, statusCode: http.StatusOK}
+			tracker := wrapResponseWriter(w)
 
 			defer func() {
 				if rec := recover(); rec != nil {
 					if logFn != nil {
-						logFn("injel/httpserver: panic recovered: %v\nstack:\n%s", rec, debug.Stack())
+						reqID := RequestIDFromContext(r.Context())
+						idPart := ""
+						if reqID != "" {
+							idPart = fmt.Sprintf(" [req_id=%s]", reqID)
+						}
+						logFn("injel/httpserver: panic recovered%s: %v\nstack:\n%s", idPart, rec, debug.Stack())
 					}
 
 					if !tracker.written {
@@ -122,7 +161,7 @@ func Logging(logFn func(format string, args ...any)) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			tracker := &responseWriterTracker{ResponseWriter: w, statusCode: http.StatusOK}
+			tracker := wrapResponseWriter(w)
 
 			next.ServeHTTP(tracker, r)
 

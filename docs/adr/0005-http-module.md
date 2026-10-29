@@ -71,9 +71,10 @@ Router xây dựng trên `net/http.ServeMux`:
 - API đăng ký: `server.Use(middlewares ...Middleware)`
 - Thứ tự thực thi: Mô hình củ hành (Onion model). Middleware đăng ký trước sẽ là tầng bọc ngoài cùng (chạy trước khi vào handler và chạy sau khi handler hoàn tất).
 - Built-in middlewares tối thiểu:
-  - `Recovery`: Bắt panic trong handler, bảo đảm trả về HTTP 500 nếu headers chưa gửi.
-  - `RequestID`: Tạo hoặc chuyển tiếp header `X-Request-ID` và đưa vào request `context`.
-  - `Logging`: Ghi log phương thức, đường dẫn, HTTP status và thời gian xử lý.
+  - `RequestID`: Xác thực và chuyển tiếp header `X-Request-ID` (giới hạn tối đa 128 ký tự ASCII an toàn để chống Log/Header Injection) hoặc tự động sinh ID ngẫu nhiên, đưa vào request `context` (`RequestIDFromContext(ctx)`).
+  - `Recovery`: Bắt panic trong handler, bảo đảm trả về HTTP 500 nếu headers chưa gửi, log stack trace kèm request ID, và giữ an toàn không làm hỏng phản hồi nếu headers đã gửi.
+  - `Logging`: Ghi log phương thức, đường dẫn, HTTP status, request ID và thời gian xử lý.
+- Thứ tự chuẩn khuyến nghị: `RequestID` -> `Logging` -> `Recovery`. Khi có panic, `Recovery` xử lý trước, trả 500, cho phép `Logging` ghi nhận chính xác mã trạng thái 500.
 
 ### 4. Cấu hình Server (Configuration)
 
@@ -93,15 +94,17 @@ type Config struct {
 `httpserver.Server` hiện thực trực tiếp `StartHook` và `StopHook`:
 
 - **Khởi động (`OnStart`):**
-  1. Kiểm tra cấu hình và tổng hợp chuỗi middleware cùng handler.
-  2. Mở `net.Listener` bằng `net.ListenConfig` trên địa chỉ chỉ định.
-  3. Nếu cổng mạng đã bị chiếm dụng (port collision) hoặc địa chỉ không hợp lệ, trả về lỗi ngay lập tức trong `OnStart`.
-  4. Nếu dùng `:0` (thường gặp trong unit test), cung cấp phương thức `server.Addr()` để lấy địa chỉ và cổng thực tế đã được cấp phát.
-  5. Chạy `http.Server.Serve(listener)` trong một goroutine riêng và giám sát lỗi phục vụ qua channel `server.ServeErrors()`.
+  1. Kiểm tra cấu hình và tổng hợp chuỗi middleware cùng handler (tránh compile lại nếu đã gọi `server.Handler()`).
+  2. Từ chối khởi động lại nếu server đã từng bị dừng (`server has been stopped`).
+  3. Mở `net.Listener` bằng `net.ListenConfig` trên địa chỉ chỉ định.
+  4. Nếu cổng mạng đã bị chiếm dụng (port collision) hoặc địa chỉ không hợp lệ, trả về lỗi ngay lập tức trong `OnStart`.
+  5. Nếu dùng `:0` (thường gặp trong unit test), cung cấp phương thức `server.Addr()` để lấy địa chỉ và cổng thực tế đã được cấp phát.
+  6. Chạy `http.Server.Serve(listener)` trong một goroutine riêng và giám sát lỗi phục vụ qua channel `server.ServeErrors()` (buffer 1, không gây deadlock nếu không đọc, tự động đóng khi goroutine phục vụ kết thúc) cùng phương thức `server.ServeError()`.
 - **Dừng (`OnStop`):**
-  1. Gọi `http.Server.Shutdown(shutdownCtx)` để cho phép các request đang xử lý hoàn thành trong giới hạn `ShutdownTimeout`.
-  2. Nếu hết timeout mà request vẫn chưa xong, gọi `http.Server.Close()` để giải phóng tài nguyên.
-  3. Xử lý an toàn khi gọi `OnStop` nhiều lần (idempotent).
+  1. Tắt HTTP keepalive (`SetKeepAlivesEnabled(false)`).
+  2. Gọi `http.Server.Shutdown(shutdownCtx)` để cho phép các request đang xử lý hoàn thành trong giới hạn `ShutdownTimeout`.
+  3. Nếu hết timeout mà request vẫn chưa xong, gọi `http.Server.Close()` để giải phóng tài nguyên.
+  4. Xử lý an toàn khi gọi `OnStop` nhiều lần (idempotent).
 
 ### 6. Dependency Injection vào Handler
 

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -516,5 +517,398 @@ func TestHTTPServerIntegrationWithInjelDIAndLifecycle(t *testing.T) {
 	// 5. Stop application (graceful shutdown of server before dependencies)
 	if err := app.Stop(ctx); err != nil {
 		t.Fatalf("app.Stop failed: %v", err)
+	}
+}
+
+func TestAsyncServeError(t *testing.T) {
+	srv := New(WithConfig(Config{
+		Addr: "127.0.0.1:0",
+	}))
+	srv.MustHandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {})
+
+	if err := srv.OnStart(context.Background()); err != nil {
+		t.Fatalf("OnStart failed: %v", err)
+	}
+
+	// Close the underlying listener to simulate sudden network/hardware failure while serving
+	srv.mu.Lock()
+	l := srv.listener
+	srv.mu.Unlock()
+	_ = l.Close()
+
+	// Wait for serve error to arrive on channel or channel close
+	select {
+	case err, ok := <-srv.ServeErrors():
+		if !ok && srv.ServeError() == nil {
+			t.Fatal("expected serve error on channel or recorded in ServeError()")
+		}
+		if ok && err == nil {
+			t.Fatal("received nil error on ServeErrors() channel")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for async serve error")
+	}
+
+	if srv.ServeError() == nil {
+		t.Fatal("expected ServeError() to return recorded error")
+	}
+
+	// Calling OnStop should still clean up cleanly
+	_ = srv.OnStop(context.Background())
+}
+
+func TestServerShutdownTimeoutAndForceClose(t *testing.T) {
+	srv := New(WithConfig(Config{
+		Addr:            "127.0.0.1:0",
+		ShutdownTimeout: 100 * time.Millisecond,
+	}))
+
+	handlerStarted := make(chan struct{})
+	blockCh := make(chan struct{})
+	defer close(blockCh)
+
+	srv.MustHandleFunc("GET /hang", func(w http.ResponseWriter, r *http.Request) {
+		close(handlerStarted)
+		<-blockCh // block until test completes
+		w.WriteHeader(http.StatusOK)
+	})
+
+	if err := srv.OnStart(context.Background()); err != nil {
+		t.Fatalf("OnStart failed: %v", err)
+	}
+	addr := srv.Addr().String()
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	defer client.CloseIdleConnections()
+
+	go func() {
+		_, _ = client.Get(fmt.Sprintf("http://%s/hang", addr))
+	}()
+
+	<-handlerStarted
+
+	// OnStop should exceed the 100ms shutdown timeout and force-close
+	stopCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := srv.OnStop(stopCtx)
+	if err == nil {
+		t.Fatal("expected OnStop to return error when shutdown times out")
+	}
+	if !strings.Contains(err.Error(), "shutdown error") && !strings.Contains(err.Error(), "deadline exceeded") {
+		t.Fatalf("expected timeout error, got: %v", err)
+	}
+}
+
+func TestRecoveryMiddlewareAfterHeadersWritten(t *testing.T) {
+	var loggedPanic string
+	logger := func(format string, args ...any) {
+		loggedPanic = fmt.Sprintf(format, args...)
+	}
+
+	srv := New(WithMiddleware(
+		RequestID(func() string { return "req-12345" }),
+		Recovery(logger),
+	))
+
+	srv.MustHandleFunc("GET /panic-after-write", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("initial-data-written"))
+		// Panic AFTER response has already been partially written
+		panic("boom after headers sent")
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/panic-after-write", nil)
+
+	// Must recover safely without crashing
+	srv.Handler().ServeHTTP(rec, req)
+
+	// Status should remain 200 since headers were already committed
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got: %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "initial-data-written") {
+		t.Fatalf("expected body to contain initial data, got: %q", rec.Body.String())
+	}
+	// Panic should still be logged with request id
+	if !strings.Contains(loggedPanic, "boom after headers sent") {
+		t.Fatalf("expected panic log, got: %s", loggedPanic)
+	}
+	if !strings.Contains(loggedPanic, "req-12345") {
+		t.Fatalf("expected panic log to include request ID, got: %s", loggedPanic)
+	}
+}
+
+func TestRequestIDValidation(t *testing.T) {
+	srv := New(WithMiddleware(RequestID(func() string {
+		return "fallback-generated-id"
+	})))
+
+	var capturedID string
+	srv.MustHandleFunc("GET /test-id", func(w http.ResponseWriter, r *http.Request) {
+		capturedID = RequestIDFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := srv.Handler()
+
+	// 1. Valid ID -> Preserved
+	{
+		req := httptest.NewRequest(http.MethodGet, "/test-id", nil)
+		req.Header.Set("X-Request-ID", "valid-id_123.ABC:test")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if capturedID != "valid-id_123.ABC:test" {
+			t.Fatalf("expected valid id preserved, got: %q", capturedID)
+		}
+		if rec.Header().Get("X-Request-ID") != "valid-id_123.ABC:test" {
+			t.Fatalf("expected header preserved, got: %q", rec.Header().Get("X-Request-ID"))
+		}
+	}
+
+	// 2. Invalid ID with control characters / newlines -> Replaced with safe generated ID
+	{
+		req := httptest.NewRequest(http.MethodGet, "/test-id", nil)
+		req.Header.Set("X-Request-ID", "bad\r\nid\ninjected: header")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if capturedID != "fallback-generated-id" {
+			t.Fatalf("expected invalid id to be replaced by generator, got: %q", capturedID)
+		}
+		if rec.Header().Get("X-Request-ID") != "fallback-generated-id" {
+			t.Fatalf("expected header replaced, got: %q", rec.Header().Get("X-Request-ID"))
+		}
+	}
+
+	// 3. Overly long ID (> 128 chars) -> Replaced
+	{
+		longID := strings.Repeat("a", 200)
+		req := httptest.NewRequest(http.MethodGet, "/test-id", nil)
+		req.Header.Set("X-Request-ID", longID)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if capturedID != "fallback-generated-id" {
+			t.Fatalf("expected long id to be replaced, got: %q", capturedID)
+		}
+	}
+}
+
+func TestRouteConflictAndRegistryConsistency(t *testing.T) {
+	srv := New()
+
+	// Register valid base route
+	if err := srv.HandleFunc("GET /users/{id}", func(w http.ResponseWriter, r *http.Request) {}); err != nil {
+		t.Fatalf("initial route failed: %v", err)
+	}
+
+	// Try registering conflicting route
+	err := srv.HandleFunc("GET /users/{id}", func(w http.ResponseWriter, r *http.Request) {})
+	if err == nil {
+		t.Fatal("expected error on duplicate route")
+	}
+	var rErr *RouteError
+	if !errors.As(err, &rErr) {
+		t.Fatalf("expected RouteError, got: %T", err)
+	}
+
+	// Ensure registry was not corrupted: we can still register a distinct valid route
+	if err := srv.HandleFunc("GET /products/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("product:" + r.PathValue("id")))
+	}); err != nil {
+		t.Fatalf("registering new valid route after conflict failed: %v", err)
+	}
+
+	// Both valid routes work properly
+	req := httptest.NewRequest(http.MethodGet, "/products/99", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || rec.Body.String() != "product:99" {
+		t.Fatalf("expected 200 product:99, got: %d %q", rec.Code, rec.Body.String())
+	}
+}
+
+type rollbackHook struct {
+	started bool
+	stopped bool
+}
+
+func (h *rollbackHook) OnStart(ctx context.Context) error {
+	h.started = true
+	return nil
+}
+
+func (h *rollbackHook) OnStop(ctx context.Context) error {
+	h.stopped = true
+	return nil
+}
+
+func TestAppStartupRollbackOnPortCollision(t *testing.T) {
+	// Occupy a port manually
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
+	defer l.Close()
+
+	occupiedAddr := l.Addr().String()
+
+	hook := &rollbackHook{}
+	app := injel.New()
+
+	// 1. Provide first component that starts successfully
+	if err := app.Provide(func() *rollbackHook {
+		return hook
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// 2. Provide HTTP server that depends on rollbackHook and fails to bind
+	if err := app.Provide(func(h *rollbackHook) (*Server, error) {
+		s := New(WithConfig(Config{
+			Addr: occupiedAddr,
+		}))
+		return s, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// 3. Start app -> must fail on server listen and rollback hook
+	startErr := app.Start(context.Background())
+	if startErr == nil {
+		t.Fatal("expected app.Start to fail on port collision")
+	}
+
+	if !hook.started {
+		t.Fatal("expected hook to have started prior to server failure")
+	}
+	if !hook.stopped {
+		t.Fatal("expected hook to have been rolled back via OnStop")
+	}
+}
+
+type orderTracker struct {
+	mu     sync.Mutex
+	events []string
+}
+
+func (ot *orderTracker) record(e string) {
+	ot.mu.Lock()
+	defer ot.mu.Unlock()
+	ot.events = append(ot.events, e)
+}
+
+type componentDep struct {
+	tracker *orderTracker
+}
+
+func (c *componentDep) OnStart(ctx context.Context) error {
+	c.tracker.record("dep-start")
+	return nil
+}
+
+func (c *componentDep) OnStop(ctx context.Context) error {
+	c.tracker.record("dep-stop")
+	return nil
+}
+
+func TestAppStopOrderServerBeforeDependencies(t *testing.T) {
+	tracker := &orderTracker{}
+	app := injel.New()
+
+	if err := app.Provide(func() *componentDep {
+		return &componentDep{tracker: tracker}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Provide(func(dep *componentDep) (*Server, error) {
+		s := New(WithConfig(Config{
+			Addr: "127.0.0.1:0",
+		}))
+		return s, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	if err := app.Start(ctx); err != nil {
+		t.Fatalf("app.Start failed: %v", err)
+	}
+
+	if err := app.Stop(ctx); err != nil {
+		t.Fatalf("app.Stop failed: %v", err)
+	}
+
+	// Injel lifecycle stops components in reverse topological order:
+	// Server was consumer of componentDep, so Server stops first, then componentDep stops.
+	tracker.mu.Lock()
+	events := append([]string(nil), tracker.events...)
+	tracker.mu.Unlock()
+
+	if len(events) < 2 {
+		t.Fatalf("expected at least 2 events, got: %v", events)
+	}
+	if events[0] != "dep-start" || events[1] != "dep-stop" {
+		t.Fatalf("unexpected event sequence: %v", events)
+	}
+}
+
+func TestServerConcurrentStartStopAndIdempotency(t *testing.T) {
+	srv := New(WithConfig(Config{
+		Addr: "127.0.0.1:0",
+	}))
+	srv.MustHandleFunc("GET /ok", func(w http.ResponseWriter, r *http.Request) {})
+
+	// 1. Concurrent OnStart calls: exactly 1 must succeed, others must fail
+	const concurrency = 10
+	var startWg sync.WaitGroup
+	var successCount int64
+	var errCount int64
+
+	startWg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer startWg.Done()
+			err := srv.OnStart(context.Background())
+			if err == nil {
+				atomic.AddInt64(&successCount, 1)
+			} else {
+				atomic.AddInt64(&errCount, 1)
+			}
+		}()
+	}
+	startWg.Wait()
+
+	if successCount != 1 {
+		t.Fatalf("successCount = %d, want 1", successCount)
+	}
+	if errCount != concurrency-1 {
+		t.Fatalf("errCount = %d, want %d", errCount, concurrency-1)
+	}
+
+	// 2. Concurrent OnStop calls: all must complete without race or panic
+	var stopWg sync.WaitGroup
+	stopWg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer stopWg.Done()
+			_ = srv.OnStop(context.Background())
+		}()
+	}
+	stopWg.Wait()
+
+	// 3. OnStart after stop must fail with "server has been stopped"
+	err := srv.OnStart(context.Background())
+	if err == nil {
+		t.Fatal("expected OnStart after OnStop to return error")
+	}
+	if !strings.Contains(err.Error(), "stopped") {
+		t.Fatalf("expected error mentioning stopped, got: %v", err)
 	}
 }

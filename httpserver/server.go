@@ -154,7 +154,8 @@ func (s *Server) Handler() http.Handler {
 	for i := len(s.middlewares) - 1; i >= 0; i-- {
 		h = s.middlewares[i](h)
 	}
-	return h
+	s.handler = h
+	return s.handler
 }
 
 // Addr returns the network address the server is listening on, or nil if not listening.
@@ -169,8 +170,17 @@ func (s *Server) Addr() net.Addr {
 }
 
 // ServeErrors returns a receive-only channel yielding asynchronous serve errors.
+// The channel has a buffer capacity of 1; if unread, errors are dropped to prevent deadlock.
+// The channel is closed when the background Serve goroutine terminates.
 func (s *Server) ServeErrors() <-chan error {
 	return s.serveErrCh
+}
+
+// ServeError returns the error that caused Serve to exit abnormally, or nil if no error occurred.
+func (s *Server) ServeError() error {
+	s.serveErrMu.RLock()
+	defer s.serveErrMu.RUnlock()
+	return s.serveErr
 }
 
 // OnStart implements injel.StartHook. It validates configuration, binds the listener,
@@ -179,6 +189,13 @@ func (s *Server) OnStart(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.stopped {
+		return &ServerError{
+			Action: "start",
+			Addr:   s.config.Addr,
+			Err:    errors.New("server has been stopped"),
+		}
+	}
 	if s.started {
 		return &ServerError{
 			Action: "start",
@@ -194,13 +211,15 @@ func (s *Server) OnStart(ctx context.Context) error {
 		s.config.Addr = DefaultAddr
 	}
 
-	// 1. Build mux and middleware chain
-	mux := s.router.buildMux()
-	var h http.Handler = mux
-	for i := len(s.middlewares) - 1; i >= 0; i-- {
-		h = s.middlewares[i](h)
+	// 1. Build mux and middleware chain if not already compiled via Handler()
+	if s.handler == nil {
+		mux := s.router.buildMux()
+		var h http.Handler = mux
+		for i := len(s.middlewares) - 1; i >= 0; i-- {
+			h = s.middlewares[i](h)
+		}
+		s.handler = h
 	}
-	s.handler = h
 
 	// 2. Bind listener
 	lc := net.ListenConfig{}
@@ -227,6 +246,7 @@ func (s *Server) OnStart(ctx context.Context) error {
 
 	// 4. Start serving in background goroutine
 	go func() {
+		defer close(s.serveErrCh)
 		err := s.httpServer.Serve(s.listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			s.serveErrMu.Lock()
@@ -264,7 +284,7 @@ func (s *Server) OnStop(ctx context.Context) error {
 	s.httpServer.SetKeepAlivesEnabled(false)
 
 	shutdownCtx := ctx
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline && s.config.ShutdownTimeout > 0 {
+	if s.config.ShutdownTimeout > 0 {
 		var cancel context.CancelFunc
 		shutdownCtx, cancel = context.WithTimeout(ctx, s.config.ShutdownTimeout)
 		defer cancel()

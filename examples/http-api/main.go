@@ -107,9 +107,9 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil || user.ID == "" {
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil || user.ID == "" || user.Name == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid user payload, id required"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid user payload, id and name required"})
 		return
 	}
 	created := h.service.repo.Create(user)
@@ -123,8 +123,8 @@ func NewHTTPServer(cfg *AppConfig, userHandler *UserHandler) (*httpserver.Server
 		httpserver.WithConfig(cfg.HTTPServer),
 		httpserver.WithMiddleware(
 			httpserver.RequestID(),
-			httpserver.Recovery(log.Printf),
 			httpserver.Logging(log.Printf),
+			httpserver.Recovery(log.Printf),
 		),
 	)
 
@@ -141,6 +141,13 @@ func NewHTTPServer(cfg *AppConfig, userHandler *UserHandler) (*httpserver.Server
 		return nil, err
 	}
 	if err := server.HandleFunc("POST /users", userHandler.CreateUser); err != nil {
+		return nil, err
+	}
+
+	// Demo panic route to verify recovery middleware without crashing the process
+	if err := server.HandleFunc("GET /panic", func(w http.ResponseWriter, r *http.Request) {
+		panic("simulated critical database error for recovery demo")
+	}); err != nil {
 		return nil, err
 	}
 
