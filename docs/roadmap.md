@@ -1,6 +1,8 @@
 # Roadmap Injel
 
-**Cập nhật:** 28/10/2026
+- **Dự án:** Injel Framework
+- **Tác giả & Người duy trì (Creator & Maintainer):** Phạm Trương Thông ([@TogPam](https://github.com/TogPam))
+- **Cập nhật:** 31/10/2026
 
 Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành. Mỗi giai đoạn chỉ bắt đầu khi giai đoạn trước có test và tiêu chí hoàn thành rõ ràng.
 
@@ -11,8 +13,8 @@ Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành.
 | 0 | Tài liệu nền tảng, module Go, cấu trúc repository | Implemented |
 | 1 | DI core: provider, singleton, validation, lỗi, interface binding | Implemented |
 | 2 | Application lifecycle: start/stop, graceful shutdown, rollback | Implemented |
-| 3 | Configuration từ environment | Planned |
-| 4 | HTTP module trên `net/http` | Planned |
+| 3 | Configuration từ environment | Implemented |
+| 4 | HTTP module trên `net/http` | Implemented |
 | 5 | CLI và code generation | Planned / cần kiểm chứng |
 | 6 | Tích hợp tùy chọn: database, logging, validation | Planned |
 | 7 | So sánh, benchmark và ổn định API | Planned |
@@ -73,25 +75,43 @@ Còn mở:
 
 **Mục tiêu:** cấu hình thống nhất, bắt đầu từ environment.
 
-- Đọc biến môi trường với tên rõ ràng.
-- Giá trị mặc định và lỗi thiếu cấu hình bắt buộc.
-- Không tự động đọc file, secret manager hoặc remote config trong bản đầu.
-- Không che giấu precedence; tài liệu hóa thứ tự ưu tiên.
-- Test cho giá trị mặc định, thiếu biến, sai kiểu và override.
+Đã có:
 
-**Chưa làm:** profile phức tạp, auto-refresh, hệ thống starter.
+- Module `config` độc lập với struct tag `env:"KEY,opt..."`.
+- Hỗ trợ giá trị mặc định (`default=...`), biến bắt buộc (`required`), biến rỗng vs không tồn tại.
+- Hỗ trợ đầy đủ các kiểu dữ liệu: string, bool, số nguyên (int, uint các kích thước), số thực (float32/64), `time.Duration`, slices, nested structs và `encoding.TextUnmarshaler`.
+- Hệ thống lỗi có ngữ cảnh: `MissingRequiredError`, `ConversionError`, `InvalidTagError`, `UnsupportedTypeError`, `InvalidTargetError`.
+- Hỗ trợ kiểm thử cô lập 100% với `config.WithMap` và `config.WithLookup`.
+- Tích hợp mượt mà vào DI qua `injel.ProvideConfig[T](app, opts...)` với fail-fast ở startup.
+- Bộ test bao phủ tất cả trường hợp hợp lệ, lỗi, override và tích hợp DI.
+
+**Trạng thái:** hoàn thành.
+
+**Chưa làm:** profile phức tạp, auto-refresh, đọc file YAML/JSON, secret manager ngoài.
 
 ## Giai đoạn 4 — HTTP
 
-**Mục tiêu:** REST API nhỏ dùng `net/http` trước.
+**Mục tiêu:** REST API mỏng, idiomatic dùng `net/http` tiêu chuẩn (Go 1.22+).
 
-- Adapter mỏng để đăng ký route và middleware.
-- Health endpoint và error handling cơ bản.
-- Tích hợp DI mà không resolve dependency trên mỗi request.
-- Test bằng `httptest`, không cần dịch vụ ngoài.
-- Chỉ tạo abstraction router riêng khi có bằng chứng `net/http` không đủ.
+Đã có:
 
-**Chưa làm:** router thay thế `net/http`, binding/validation framework lớn, OpenAPI generator.
+- Package `httpserver` độc lập, zero external dependencies.
+- Router tận dụng `net/http.ServeMux` hỗ trợ method routing và path parameters (`r.PathValue`).
+- Cơ chế sandbox pre-validation ngăn chặn panic do cú pháp route sai hoặc trùng lặp, chuyển thành `*httpserver.RouteError`.
+- Middleware chain chuẩn (`func(http.Handler) http.Handler`):
+  - `RequestID`: trích xuất hoặc sinh UUIDv4 ngẫu nhiên, lưu vào request context (`httpserver.GetRequestID(ctx)`) và header response `X-Request-ID`.
+  - `Recovery`: bắt panic, ghi log stack trace có request ID, trả HTTP 500 Internal Server Error dạng JSON an toàn.
+  - `Logging`: ghi nhận method, path, remote addr, status code, duration, request ID bằng `log/slog`.
+- Built-in Health check endpoint (`GET /health` hoặc tùy chỉnh) trả trạng thái `UP`, timestamp và service name.
+- Tích hợp vòng đời Injel (`injel.StartHook` và `injel.StopHook`):
+  - `OnStart(ctx)`: bind socket non-blocking, khởi chạy `http.Server.Serve` trong goroutine riêng, kiểm tra lỗi sớm và hỗ trợ dynamic port (`:0`).
+  - `OnStop(ctx)`: tắt HTTP keepalive, thực thi `Shutdown(ctx)` graceful shutdown với context cancellation và timeout.
+- Ví dụ REST API hoàn chỉnh trong `examples/http-api` tích hợp đầy đủ Injel DI, Configuration, Service, Repository, Handler và Lifecycle.
+- Bộ test đầy đủ bao phủ router, path variables, middleware order, request ID context propagation, recovery, graceful shutdown, lifecycle integration và port collision.
+
+**Trạng thái:** hoàn thành.
+
+**Chưa làm:** router thay thế `net/http`, request body auto-validation, OpenAPI schema generator.
 
 ## Giai đoạn 5 — CLI và code generation
 
@@ -125,11 +145,10 @@ Mỗi tích hợp phải là module riêng, không làm nặng core.
 
 ## Thứ tự ưu tiên ngay sau phiên này
 
-1. Chốt contract DI và bổ sung test cho interface/binding nếu cần.
-2. Thiết kế và triển khai lifecycle start/stop có test.
-3. Viết ví dụ Hello API với `net/http`, health endpoint và graceful shutdown.
-4. Thiết kế configuration từ environment.
-5. Chỉ sau đó cân nhắc CLI, codegen và tích hợp ngoài.
+1. Review và merge Phase 4 (HTTP module) vào branch `develop`.
+2. Đánh giá nhu cầu CLI tối thiểu để scaffold project (`injel new`, `injel run`).
+3. Khảo sát tích hợp database (`database/sql`, connection pool) và logging có cấu trúc (`log/slog`) dưới dạng các module mở rộng độc lập.
+4. Đo lường hiệu năng khởi động và bộ nhớ so với Go thuần và các framework khác.
 
 ## Non-goals dài hạn (trừ khi có quyết định mới)
 

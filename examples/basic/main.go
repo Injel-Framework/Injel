@@ -1,4 +1,4 @@
-// Command basic demonstrates provider functions, singleton resolution, and application lifecycle.
+// Command basic demonstrates configuration, provider functions, singleton resolution, and application lifecycle.
 package main
 
 import (
@@ -9,9 +9,9 @@ import (
 	"github.com/Injel-Framework/Injel"
 )
 
-// Config is an application-level configuration value.
+// Config is an application-level configuration value loaded from environment variables.
 type Config struct {
-	DSN string
+	DSN string `env:"DATABASE_URL,default=file:injel.db"`
 }
 
 // UserRepository is a data-access component with lifecycle management.
@@ -34,11 +34,6 @@ type UserService struct {
 	repo *UserRepository
 }
 
-// NewConfig constructs the application configuration.
-func NewConfig() *Config {
-	return &Config{DSN: "file:injel.db"}
-}
-
 // NewUserRepository constructs the repository from configuration.
 func NewUserRepository(cfg *Config) *UserRepository {
 	return &UserRepository{dsn: cfg.DSN}
@@ -55,8 +50,12 @@ func NewUserService(repo *UserRepository) (*UserService, error) {
 func main() {
 	app := injel.New()
 
+	// Load Config from environment variables (defaults to file:injel.db)
+	if err := injel.ProvideConfig[Config](app); err != nil {
+		log.Fatalf("register config provider: %v", err)
+	}
+
 	for _, provider := range []any{
-		NewConfig,
 		NewUserRepository,
 		NewUserService,
 	} {
@@ -67,7 +66,7 @@ func main() {
 
 	ctx := context.Background()
 
-	// Start validates the graph, resolves instances, and invokes OnStart hooks.
+	// Start validates the graph, loads configuration, resolves instances, and invokes OnStart hooks.
 	if err := app.Start(ctx); err != nil {
 		log.Fatalf("start application: %v", err)
 	}

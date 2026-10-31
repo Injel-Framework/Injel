@@ -1,67 +1,77 @@
-# Injel
+# Injel — A Go (Golang) Backend Framework
 
-**Spring-inspired developer experience. Native Go simplicity.**
+**English** | [Tiếng Việt](README.vi.md)
 
-Injel (Injection + Element) là framework backend viết bằng Go, lấy cảm hứng từ mô hình phát triển của Java Spring Boot nhưng giữ cách thiết kế và đặc tính của Go. Mục tiêu của Injel không phải mô phỏng Java trong Go, mà là giảm boilerplate khi kết nối các thành phần của một ứng dụng backend, đồng thời giữ luồng chạy rõ ràng, dễ đọc và dễ debug.
+[![CI](https://github.com/Injel-Framework/Injel/actions/workflows/ci.yml/badge.svg)](https://github.com/Injel-Framework/Injel/actions)
+[![Go Version](https://img.shields.io/badge/go-1.24+-00ADD8?logo=go)](https://go.dev/)
+[![GitHub Repository](https://img.shields.io/badge/github-Injel--Framework%2FInjel-blue?logo=github)](https://github.com/Injel-Framework/Injel)
 
-> Tài liệu đầu vào của dự án từng mang tên **GoVa** và **Tertex** trong các tài liệu trước đây. Tên chính thức hiện tại của sản phẩm là **Injel**; các tài liệu lịch sử vẫn có thể lưu giữ tên cũ.
+> **Spring-inspired developer experience. Native Go simplicity.**
 
-## Vấn đề cần giải quyết
+Injel is a Go backend framework inspired by Spring Boot, designed to simplify dependency injection, configuration, HTTP development, and application lifecycle management while preserving native Go simplicity.
 
-Một ứng dụng Go nhiều thành phần thường phải tự lựa chọn và kết nối router, cấu hình, logging, database, validation và vòng đời ứng dụng. Khi số lượng thành phần tăng, code khởi tạo trở nên dài, lặp lại và khó kiểm tra:
+---
 
-- Không có quy ước thống nhất để đăng ký và lấy dependency.
-- Lỗi thiếu dependency hoặc chu trình dependency thường chỉ xuất hiện khi chạy.
-- Việc dựng và dừng tài nguyên theo đúng thứ tự dễ bị bỏ sót.
-- Mỗi dự án giải quyết cùng một nhóm nhu cầu theo một cách khác nhau.
+## What is Injel?
 
-Injel hướng tới một mô hình thống nhất cho các vấn đề trên, bắt đầu từ Dependency Injection (DI) rõ ràng và có kiểm tra sớm.
+**Injel** (*Injection + Element*) is a lightweight, modern Go backend framework that provides a cohesive foundation for building robust REST APIs and microservices.
 
-## Nguyên tắc thiết kế
+In standard Go development, assembling an application requires stitching together disparate libraries for routing, dependency injection, configuration, and lifecycle hooks. As projects grow:
+- Initialization boilerplate multiplies across `main.go` and constructor chains.
+- Missing dependencies and circular dependency cycles are discovered only at runtime.
+- Proper startup sequencing and graceful resource shutdown are difficult to coordinate.
+- Every project reinvents its own wiring conventions.
 
-1. **Provider function là API chính.** Dependency được khai báo qua tham số và kết quả của hàm Go thông thường.
-2. **Lỗi xuất hiện sớm.** Provider trùng, dependency thiếu và chu trình được phát hiện trước khi ứng dụng phục vụ request.
-3. **Không giấu luồng chạy.** Không package scanning ngầm, không global container, không annotation giả lập.
-4. **Tự động hóa phần lặp lại, không che giấu phần quan trọng.** Abstraction chỉ được thêm khi có nhu cầu thực tế.
-5. **Core nhỏ, module rời.** Core không phụ thuộc ORM, message broker hay dịch vụ ngoài.
-6. **Không tuyên bố hiệu năng khi chưa đo.** Benchmark chỉ có ý nghĩa khi implementation ổn định.
+Injel solves these problems by providing:
+1. **Predictable IoC Container:** Clean, constructor-based dependency injection with early dependency graph validation.
+2. **Type-Safe Environment Configuration:** Automatic mapping of environment variables into Go structs using struct tags.
+3. **Structured Application Lifecycle:** Deterministic startup ordering, automatic rollback on initialization failure, and graceful shutdown.
+4. **Standard-Library HTTP Engine:** High-performance HTTP routing, sandbox route validation, and idiomatic middleware built directly on `net/http` without third-party router dependencies.
 
-## Trạng thái phát triển
+---
 
-Dự án đang ở giai đoạn đầu. Không có tính năng nào dưới đây được quảng cáo ngoài những gì đã thực sự có test.
+## Core Features
 
-| Thành phần | Trạng thái | Ghi chú |
-| --- | --- | --- |
-| Tài liệu sản phẩm, roadmap, ADR | Implemented | Xem `docs/` |
-| DI container: provider function, singleton, resolve theo kiểu | Implemented | Reflection tại thời điểm resolve; không chạy trên mỗi request |
-| Phát hiện provider trùng, dependency thiếu, chu trình | Implemented | Có lỗi có ngữ cảnh và test |
-| Constructor trả `error` | Implemented | Lỗi được bọc với tên provider và kiểu kết quả |
-| Interface binding (`ProvideAs`, `Bind`) | Implemented | Singleton dùng chung giữa concrete type và interface |
-| Application lifecycle (start/stop, rollback, graceful shutdown) | Implemented | Thứ tự topo theo đồ thị dependency; rollback khi start lỗi |
-| Configuration từ environment | Planned | Chưa triển khai |
-| HTTP module trên `net/http` | Planned | Chưa triển khai |
-| CLI / code generation | Planned | Chưa triển khai |
-| Tích hợp database, Redis, broker | Planned | Ngoài phạm vi MVP hiện tại |
+- **Constructor-Based Dependency Injection (DI):** Register regular Go constructors (`func NewService(repo Repository) (*Service, error)`). Injel analyzes parameters and return types at startup and resolves singletons on demand.
+- **Explicit Interface Binding:** Bind concrete implementations to interface abstractions (`ProvideAs`, `Bind`) while sharing a single underlying instance.
+- **Fail-Fast Graph Validation:** Validates the entire dependency graph—detecting cycles, missing dependencies, and duplicate providers—without side effects before the application starts serving requests.
+- **Structured Application Lifecycle:** Components implement `StartHook` and `StopHook`. Startup proceeds in topological dependency order; shutdown executes in reverse (LIFO) order with graceful context timeouts.
+- **Startup Failure Rollback:** If any component fails to start, previously initialized components are automatically rolled back and cleaned up in reverse order.
+- **Environment Configuration Module:** Read environment variables into strongly typed structs using `env:"KEY,opts..."` tags with support for `default`, `required`, scalar types, slices, durations, and `encoding.TextUnmarshaler`.
+- **HTTP Server & REST Routing:** Built entirely on Go standard library `net/http` (Go 1.22+ `net/http.ServeMux`) with path variables (`r.PathValue("id")`) and zero external dependencies.
+- **Router Sandbox Pre-validation:** Catches route syntax errors and pattern conflicts early in an isolated sandbox mux, returning structured errors instead of panicking.
+- **Idiomatic Middleware Chain:** Standard Go middleware signature (`func(http.Handler) http.Handler`) featuring built-in `RequestID` (with injection protection), structured `Logging`, and `Recovery` (capturing panics and returning HTTP 500 JSON).
 
-## Yêu cầu môi trường
+---
 
-- Go 1.24 trở lên (phiên bản đã kiểm tra: Go 1.27.1).
+## Architecture
 
-## Cài đặt và chạy test
-
-```bash
-go test ./...
-go vet ./...
-go test -race ./...
+```text
+Injel Application (injel.App)
+├── Inversion of Control & DI Engine (di.Container)
+│   ├── Provider Registry (func(...) T / func(...) (T, error))
+│   ├── Graph Validation (Cycle, Missing, Duplicate Detection)
+│   ├── Singleton Cache (Reflection solely at startup)
+│   └── Explicit Interface Binding (ProvideAs / Bind)
+├── Environment Configuration (config)
+│   ├── Struct Tag Parsing (`env:"KEY,default=...,required"`)
+│   ├── Type Conversions (Scalars, Slices, Durations, Unmarshalers)
+│   └── Isolated Lookup for Testing (WithLookup / WithMap)
+├── Application Lifecycle Management
+│   ├── StartHook (Topological Dependency Ordering)
+│   ├── StopHook (Reverse LIFO Graceful Shutdown)
+│   └── Automatic Rollback on Startup Failure
+└── HTTP Server & REST API Toolkit (httpserver)
+    ├── Router with Sandbox Pre-validation (net/http.ServeMux)
+    ├── Idiomatic Middleware Chain (RequestID -> Logging -> Recovery)
+    └── Lifecycle Hooks (Non-blocking Serve & Graceful Drain)
 ```
 
-Chạy ví dụ:
+---
 
-```bash
-go run ./examples/basic
-```
+## Quick Start
 
-## Ví dụ sử dụng
+### 1. Minimal Application with DI and Lifecycle
 
 ```go
 package main
@@ -74,123 +84,239 @@ import (
 	"github.com/Injel-Framework/Injel"
 )
 
-type Config struct {
-	DSN string
+type DatabaseConfig struct {
+	DSN string `env:"DATABASE_URL,default=file:app.db"`
 }
 
-type UserRepository struct {
+type Database struct {
 	dsn string
 }
 
-func (r *UserRepository) OnStart(ctx context.Context) error {
-	fmt.Println("UserRepository: connected to database", r.dsn)
+func (db *Database) OnStart(ctx context.Context) error {
+	fmt.Println("Database: connected to", db.dsn)
 	return nil
 }
 
-func (r *UserRepository) OnStop(ctx context.Context) error {
-	fmt.Println("UserRepository: closed database connection")
+func (db *Database) OnStop(ctx context.Context) error {
+	fmt.Println("Database: connection closed")
 	return nil
+}
+
+func NewDatabase(cfg *DatabaseConfig) *Database {
+	return &Database{dsn: cfg.DSN}
 }
 
 type UserService struct {
-	repo *UserRepository
+	db *Database
 }
 
-func NewConfig() *Config {
-	return &Config{DSN: "file:injel.db"}
-}
-
-func NewUserRepository(cfg *Config) *UserRepository {
-	return &UserRepository{dsn: cfg.DSN}
-}
-
-func NewUserService(repo *UserRepository) (*UserService, error) {
-	if repo == nil {
-		return nil, fmt.Errorf("user repository is nil")
-	}
-	return &UserService{repo: repo}, nil
+func NewUserService(db *Database) *UserService {
+	return &UserService{db: db}
 }
 
 func main() {
 	app := injel.New()
 
-	for _, provider := range []any{
-		NewConfig,
-		NewUserRepository,
-		NewUserService,
-	} {
-		if err := app.Provide(provider); err != nil {
-			log.Fatalf("register provider: %v", err)
-		}
+	// 1. Bind environment configuration
+	if err := injel.ProvideConfig[DatabaseConfig](app); err != nil {
+		log.Fatalf("provide config: %v", err)
 	}
 
-	ctx := context.Background()
+	// 2. Register constructor providers
+	if err := app.Provide(NewDatabase); err != nil {
+		log.Fatalf("provide database: %v", err)
+	}
+	if err := app.Provide(NewUserService); err != nil {
+		log.Fatalf("provide user service: %v", err)
+	}
 
-	// Start kiểm tra graph, resolve dependency theo thứ tự topo và chạy OnStart hook.
+	// 3. Start application (validates graph, loads config, starts lifecycle)
+	ctx := context.Background()
 	if err := app.Start(ctx); err != nil {
 		log.Fatalf("start application: %v", err)
 	}
 	defer func() {
-		// Stop chạy các OnStop hook theo thứ tự ngược lại (graceful shutdown).
 		if err := app.Stop(ctx); err != nil {
 			log.Fatalf("stop application: %v", err)
 		}
 	}()
 
-	service, err := injel.Get[*UserService](app)
+	svc, err := injel.Get[*UserService](app)
 	if err != nil {
-		log.Fatalf("resolve user service: %v", err)
+		log.Fatalf("get user service: %v", err)
 	}
-
-	fmt.Println("user service resolved with repository DSN:", service.repo.dsn)
+	fmt.Println("Application ready! Service using DB:", svc.db.dsn)
 }
 ```
 
-## Cấu trúc repository
+### 2. Building a REST API Server
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/Injel-Framework/Injel"
+	"github.com/Injel-Framework/Injel/httpserver"
+)
+
+type ServerConfig struct {
+	Port int `env:"PORT,default=8080"`
+}
+
+type UserHandler struct{}
+
+func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(map[string]string{"id": id, "name": "Alice"})
+}
+
+func NewHTTPServer(cfg *ServerConfig, h *UserHandler) (*httpserver.Server, error) {
+	server := httpserver.New(
+		httpserver.WithConfig(httpserver.Config{
+			Addr: fmt.Sprintf(":%d", cfg.Port),
+		}),
+		httpserver.WithMiddleware(
+			httpserver.RequestID(),
+			httpserver.Logging(log.Printf),
+			httpserver.Recovery(log.Printf),
+		),
+	)
+
+	_ = server.RegisterHealth() // GET /health
+	if err := server.HandleFunc("GET /users/{id}", h.GetUser); err != nil {
+		return nil, err
+	}
+	return server, nil
+}
+```
+
+---
+
+## Project Structure
 
 ```text
 injel/
-├── README.md
-├── go.mod
-├── injel.go               # Facade công khai: App, New, Get, Start, Stop, Lifecycle
-├── injel_test.go
-├── di/                    # DI engine công khai
-│   ├── container.go
+├── README.md              # Primary documentation (English)
+├── README.vi.md           # Vietnamese documentation
+├── AUTHORS.md             # Authors and project maintainers
+├── CITATION.cff           # Software citation metadata
+├── doc.go                 # Root package documentation
+├── go.mod                 # Go module definition (zero dependencies)
+├── injel.go               # Public application facade
+├── injel_test.go          # Application integration tests
+├── config/                # Environment configuration module
+│   ├── doc.go
+│   ├── config.go          # Struct tag reflection & type conversion
+│   ├── errors.go
+│   └── config_test.go
+├── di/                    # Dependency injection engine
+│   ├── doc.go
+│   ├── container.go       # Provider registry, singleton cache, interface binding
 │   ├── provider.go
 │   ├── errors.go
 │   └── container_test.go
+├── httpserver/            # HTTP server & routing module
+│   ├── doc.go
+│   ├── errors.go
+│   ├── middleware.go      # RequestID, Logging, Recovery middlewares
+│   ├── router.go          # ServeMux wrapper with sandbox pre-validation
+│   ├── server.go          # HTTP server with StartHook/StopHook lifecycle
+│   └── server_test.go
 ├── docs/
-│   ├── product-brief.md
-│   ├── roadmap.md
-│   └── adr/
+│   ├── product-brief.md   # Product brief and design philosophy
+│   ├── roadmap.md         # Framework development roadmap
+│   ├── branding/
+│   │   └── github-metadata.md
+│   └── adr/               # Architecture Decision Records
 │       ├── 0001-dependency-injection.md
 │       ├── 0002-interface-binding.md
-│       └── 0003-application-lifecycle.md
+│       ├── 0003-application-lifecycle.md
+│       ├── 0004-configuration.md
+│       └── 0005-http-module.md
 └── examples/
-    └── basic/
+    ├── basic/             # DI, configuration, and lifecycle example
+    │   └── main.go
+    └── http-api/          # Full REST API server example
         └── main.go
 ```
 
-## Giới hạn đã biết của DI & Lifecycle hiện tại
+---
 
-- Mỗi kiểu chỉ có một provider (singleton theo kiểu); chưa hỗ trợ named provider hoặc scope động.
-- Provider có thể có nhiều tham số và trả về `T` hoặc `(T, error)`.
-- Reflection chỉ diễn ra khi resolve ở startup, không diễn ra trên mỗi request.
-- Interface binding yêu cầu khai báo tường minh qua `ProvideAs` hoặc `Bind`.
-- Constructor không nên gọi ngược lại container trong quá trình resolve.
+## Why Injel?
 
-## Module path
+| Principle | Injel Approach |
+| --- | --- |
+| **Native Go Conventions** | Uses ordinary Go constructors, standard interfaces, and idiomatic error handling. No code generation required. |
+| **Explicit Wiring** | Dependencies are clearly visible in function signatures. No hidden package scanning or global variables. |
+| **Fail-Fast Safety** | Graph cycles, missing components, duplicate providers, and conflicting routes are caught immediately at startup. |
+| **Zero External Dependencies** | Core, DI, configuration, and HTTP modules rely exclusively on the Go standard library. |
+| **Startup-Only Reflection** | Reflection occurs once during application startup. No reflection on the HTTP request execution path. |
+| **Graceful Lifecycle** | Deterministic topological startup, LIFO shutdown, and automatic cleanup rollback on failure. |
 
-Module chính thức của dự án:
+---
 
-```go
-module github.com/Injel-Framework/Injel
+## Requirements & Testing
+
+Injel requires **Go 1.24** or higher.
+
+To run the full test suite with race detection:
+
+```bash
+go test ./...
+go test -race ./...
+go vet ./...
 ```
 
-## Tài liệu
+To run the included runnable examples:
 
-- [`docs/product-brief.md`](docs/product-brief.md) — định hướng sản phẩm, phạm vi MVP, tiêu chí thành công.
-- [`docs/roadmap.md`](docs/roadmap.md) — lộ trình từ core tới HTTP, configuration và CLI.
-- [`docs/adr/0001-dependency-injection.md`](docs/adr/0001-dependency-injection.md) — quyết định kiến trúc DI.
-- [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — quyết định kiến trúc Interface Binding.
-- [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — quyết định kiến trúc Application Lifecycle.
+```bash
+# Basic DI, configuration, and lifecycle demo
+go run ./examples/basic
+
+# Full REST API server demo with HTTP routing and middleware
+go run ./examples/http-api
+```
+
+---
+
+## Creator & Maintainer
+
+**Phạm Trương Thông (TogPam)**
+
+Creator and maintainer of Injel Framework.
+
+GitHub: [@TogPam](https://github.com/TogPam)
+
+Injel is an independently developed Go backend framework focused on developer experience, dependency injection, application lifecycle and native Go simplicity.
+
+---
+
+## Documentation & References
+
+- [`README.vi.md`](README.vi.md) — Vietnamese documentation.
+- [`AUTHORS.md`](AUTHORS.md) — Authors and maintainers.
+- [`CITATION.cff`](CITATION.cff) — Software citation metadata.
+- [`docs/product-brief.md`](docs/product-brief.md) — Product brief and design philosophy.
+- [`docs/roadmap.md`](docs/roadmap.md) — Framework roadmap and milestones.
+- [`docs/branding/github-metadata.md`](docs/branding/github-metadata.md) — GitHub metadata, topics, and description.
+- [`docs/adr/0001-dependency-injection.md`](docs/adr/0001-dependency-injection.md) — ADR: Dependency Injection.
+- [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — ADR: Interface Binding.
+- [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — ADR: Application Lifecycle.
+- [`docs/adr/0004-configuration.md`](docs/adr/0004-configuration.md) — ADR: Configuration Module.
+- [`docs/adr/0005-http-module.md`](docs/adr/0005-http-module.md) — ADR: HTTP Server & REST API.
+
+---
+
+## Contributing & License
+
+Injel is currently under active foundational development. Contributions, bug reports, and suggestions are welcome via [GitHub Issues](https://github.com/Injel-Framework/Injel/issues) and Pull Requests.

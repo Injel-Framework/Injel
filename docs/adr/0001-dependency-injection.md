@@ -2,6 +2,7 @@
 
 - **Trạng thái:** Accepted
 - **Ngày:** 27/10/2026
+- **Tác giả & Project Maintainer:** Phạm Trương Thông (@TogPam)
 - **Người quyết định:** Phạm Trương Thông
 - **Phạm vi:** DI core của MVP
 

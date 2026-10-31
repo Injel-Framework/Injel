@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/Injel-Framework/Injel/config"
 	"github.com/Injel-Framework/Injel/di"
 )
 
@@ -186,8 +187,12 @@ func (a *App) Start(ctx context.Context) error {
 
 	// 1. Resolve all dependencies eagerly in dependency order.
 	if err := a.container.ResolveAll(); err != nil {
-		a.state = StateFailed
-		return fmt.Errorf("injel: resolution failed: %w", err)
+		for _, inst := range a.container.ResolvedInstances() {
+			if stopper, ok := inst.(StopHook); ok {
+				a.startedHooks = append(a.startedHooks, stopper)
+			}
+		}
+		return a.rollback(fmt.Errorf("injel: resolution failed: %w", err))
 	}
 
 	// 2. Discover and invoke StartHooks in dependency order.
@@ -308,4 +313,78 @@ func Bind[Target any, Source any](a *App) error {
 		return fmt.Errorf("injel: cannot bind in a nil app")
 	}
 	return di.Bind[Target, Source](a.container)
+}
+
+// ProvideConfig loads configuration into type T using the config package,
+// and registers the constructed configuration value as a singleton provider in the application.
+//
+// Both T and *T providers are registered in the DI container so consumers can inject
+// either by pointer (*T) or by value (T). The configuration struct is allocated as a
+// canonical heap singleton, ensuring all pointer injections share the exact same instance.
+// If loading the configuration fails during startup resolution, app.Start fails immediately.
+func ProvideConfig[T any](a *App, opts ...config.Option) error {
+	if a == nil {
+		return fmt.Errorf("injel: cannot provide config to a nil app")
+	}
+
+	typ := reflect.TypeFor[T]()
+	if typ == nil {
+		return fmt.Errorf("injel: config type cannot be nil")
+	}
+
+	if typ.Kind() == reflect.Pointer {
+		if typ.Elem().Kind() != reflect.Struct {
+			return fmt.Errorf("injel: config type must be a struct or pointer to struct, got pointer to %s", typ.Elem().Kind())
+		}
+
+		// Register pointer loader as canonical provider
+		if err := a.Provide(func() (T, error) {
+			return config.Load[T](opts...)
+		}); err != nil {
+			return err
+		}
+
+		// Also register value provider so consumers can inject by value: func(ptr T) Elem
+		valueType := typ.Elem()
+		valProvider := reflect.MakeFunc(
+			reflect.FuncOf([]reflect.Type{typ}, []reflect.Type{valueType}, false),
+			func(args []reflect.Value) []reflect.Value {
+				return []reflect.Value{args[0].Elem()}
+			},
+		)
+		return a.Provide(valProvider.Interface())
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return fmt.Errorf("injel: config type must be a struct or pointer to struct, got %s", typ.Kind())
+	}
+
+	// T is a struct type: register *T as canonical loader, and T as dereference provider
+	ptrType := reflect.PointerTo(typ)
+	ptrLoader := reflect.MakeFunc(
+		reflect.FuncOf(nil, []reflect.Type{ptrType, reflect.TypeFor[error]()}, false),
+		func(args []reflect.Value) []reflect.Value {
+			instance := reflect.New(typ)
+			var errVal reflect.Value
+			if err := config.Bind(instance.Interface(), opts...); err != nil {
+				errVal = reflect.ValueOf(err)
+			} else {
+				errVal = reflect.Zero(reflect.TypeFor[error]())
+			}
+			return []reflect.Value{instance, errVal}
+		},
+	)
+
+	if err := a.Provide(ptrLoader.Interface()); err != nil {
+		return err
+	}
+
+	valProvider := reflect.MakeFunc(
+		reflect.FuncOf([]reflect.Type{ptrType}, []reflect.Type{typ}, false),
+		func(args []reflect.Value) []reflect.Value {
+			return []reflect.Value{args[0].Elem()}
+		},
+	)
+
+	return a.Provide(valProvider.Interface())
 }
