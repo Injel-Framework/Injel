@@ -65,7 +65,7 @@ Application Context
 └── Optional integrations (database, logging, validation, ...)
 ```
 
-Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh), **Application Lifecycle** (Start/Stop, graceful shutdown, rollback), **Configuration module** (nạp từ environment variables, struct tag `env`, default, required, isolated testing) và **HTTP module** (dựa trên `net/http` với router sandbox pre-validation, middleware chain, health endpoint và lifecycle hooks) cùng facade `App` đã được triển khai hoàn chỉnh với unit test và race detector.
+Ở giai đoạn hiện tại, **DI container** (bao gồm interface binding tường minh), **Application Lifecycle** (Start/Stop, graceful shutdown, rollback), **Configuration module** (nạp từ environment variables, struct tag `env`, default, required, isolated testing), **HTTP module** (dựa trên `net/http` với router sandbox pre-validation, middleware chain, health endpoint và lifecycle hooks), cùng **Injel CLI** (`cmd/injel` với project scaffolding `injel new`, `injel run`, `injel doctor`, `injel version`) đã được triển khai hoàn chỉnh với unit test, integration test và race detector.
 
 ## 6. Phạm vi MVP
 
@@ -78,18 +78,19 @@ Application Context
 - Application Lifecycle: quản lý `Start`/`Stop`, hook `OnStart`/`OnStop`, rollback khi start lỗi và bảo toàn lỗi bằng `errors.Join`.
 - Configuration module: struct tag `env`, giá trị mặc định, kiểm tra bắt buộc, chuyển đổi kiểu dữ liệu, TextUnmarshaler, và tích hợp `ProvideConfig` vào DI container.
 - HTTP server module: router mỏng dựa trên `net/http` (Go 1.22+), router pre-validation, middleware chain (`RequestID`, `Recovery`, `Logging`), health check endpoint và tích hợp lifecycle hooks (`OnStart`/`OnStop`).
+- Injel CLI (`cmd/injel`): công cụ dòng lệnh hỗ trợ `injel new` (project scaffolding với embedded templates), `injel run`, `injel doctor` (kiểm tra toolchain), và `injel version`.
 - Phát hiện provider trùng, dependency thiếu, chu trình dependency và lỗi cấu hình trước khi chạy.
 - Lỗi khởi tạo có tên provider, kiểu và đường đi dependency; hỗ trợ `errors.Is`/`errors.As`.
 - Unit test cho luồng thành công, lỗi cốt lõi, concurrency và thread-safety.
 - Ví dụ chạy được bằng `go run` (`examples/basic`, `examples/http-api`).
-- Tài liệu quickstart, roadmap và các ADR (0001, 0002, 0003, 0004, 0005).
+- Tài liệu quickstart, roadmap, báo cáo nghiên cứu và các ADR (0001, 0002, 0003, 0004, 0005, 0006).
 
 ### Chưa làm trong MVP
 
+- Compile-time DI code generation (đã khảo sát tại `docs/research/code-generation.md`, hoãn triển khai cho MVP).
 - ORM hoặc transaction framework riêng.
 - Framework router bên ngoài (Gin, Echo, Chi, Fiber).
 - Annotation giống Java (`@Bean`, `@Service`, `@Autowired`).
-- CLI sinh toàn bộ ứng dụng.
 - Auto-configuration phức tạp, profile, Starter lớn.
 - Hệ thống plugin nhiều tầng.
 - Tích hợp Redis, RabbitMQ, Kafka hoặc dịch vụ ngoài.

@@ -1,0 +1,10 @@
+package config
+
+import "github.com/Injel-Framework/Injel/httpserver"
+
+// AppConfig defines the environment variables and HTTP server configurations.
+type AppConfig struct {
+	AppName    string `env:"APP_NAME,default={{ .ProjectName }}"`
+	Env        string `env:"ENV,default=development"`
+	HTTPServer httpserver.Config
+}

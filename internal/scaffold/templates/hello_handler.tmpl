@@ -1,0 +1,36 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"{{ .ModulePath }}/internal/config"
+)
+
+// HelloHandler handles greeting requests.
+type HelloHandler struct {
+	cfg *config.AppConfig
+}
+
+// NewHelloHandler constructs a new HelloHandler.
+func NewHelloHandler(cfg *config.AppConfig) *HelloHandler {
+	return &HelloHandler{cfg: cfg}
+}
+
+// HelloResponse represents the JSON response for the greeting endpoint.
+type HelloResponse struct {
+	Message string `json:"message"`
+	App     string `json:"app"`
+	Env     string `json:"env"`
+}
+
+// ServeHTTP responds with a friendly JSON message.
+func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(HelloResponse{
+		Message: "Hello from Injel Framework!",
+		App:     h.cfg.AppName,
+		Env:     h.cfg.Env,
+	})
+}

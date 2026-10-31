@@ -1,0 +1,774 @@
+{
+  "nodes": [
+    {
+      "id": "authors_pham_truong_thong",
+      "label": "Phạm Trương Thông (Creator & Lead Maintainer)",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/AUTHORS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "authors_injel_project",
+      "label": "Injel Framework Project Maintenance",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/AUTHORS.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "readme_injel_framework",
+      "label": "Injel Framework",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_ioc_container",
+      "label": "Predictable IoC Container & DI Engine",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_environment_configuration",
+      "label": "Type-Safe Environment Configuration",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_application_lifecycle",
+      "label": "Structured Application Lifecycle Management",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_httpserver_engine",
+      "label": "Standard-Library HTTP Engine & REST Router",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_injel_cli",
+      "label": "Injel Command Line Interface (CLI)",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_vi_gova_tertex_legacy_names",
+      "label": "GoVa and Tertex Historical Predecessor Names",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/README.vi.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_vi_design_principles",
+      "label": "Injel Architectural Design Principles",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/README.vi.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0001_dependency_injection_adr_0001",
+      "label": "ADR 0001: Dependency Injection for Injel MVP",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0001_dependency_injection_startup_reflection_di",
+      "label": "Startup Reflection Dependency Injection Strategy",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0001_dependency_injection_fail_fast_graph_validation",
+      "label": "Fail-Fast Graph Validation (Cycles & Missing Dependencies)",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0002_interface_binding_adr_0002",
+      "label": "ADR 0002: Interface Binding in Injel",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0002-interface-binding.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0002_interface_binding_explicit_interface_binding",
+      "label": "Explicit Interface Binding (ProvideAs / Bind)",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0002-interface-binding.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0003_application_lifecycle_adr_0003",
+      "label": "ADR 0003: Application Lifecycle Management",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0003_application_lifecycle_lifecycle_hooks",
+      "label": "StartHook and StopHook Lifecycle Contracts",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0003_application_lifecycle_startup_rollback",
+      "label": "Startup Failure Rollback Mechanism",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0003_application_lifecycle_application_state_machine",
+      "label": "Thread-Safe Application State Machine",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0004_configuration_adr_0004",
+      "label": "ADR 0004: Configuration Module",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0004-configuration.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0004_configuration_struct_tag_env_parser",
+      "label": "Struct Tag env Parser & Type Converter",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0004-configuration.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0004_configuration_isolated_lookup_testing",
+      "label": "Isolated Lookup Testing (WithLookup / WithMap)",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0004-configuration.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0005_http_module_adr_0005",
+      "label": "ADR 0005: HTTP Server & REST API Module",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0005_http_module_router_sandbox_prevalidation",
+      "label": "Router Sandbox Pre-validation",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0005_http_module_middleware_chain",
+      "label": "Idiomatic Middleware Chain (RequestID, Logging, Recovery)",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0006_cli_architecture_adr_0006",
+      "label": "ADR 0006: Injel CLI Architecture & Project Scaffolding",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0006_cli_architecture_project_scaffolding",
+      "label": "Project Scaffolding Engine (injel new)",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_adr_0006_cli_architecture_local_injel_workspaces",
+      "label": "Local Development Linking via go.work",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_branding_github_metadata_github_branding",
+      "label": "GitHub Repository Metadata & Topics",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/branding/github-metadata.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_branding_github_metadata_social_preview_guidelines",
+      "label": "Open Graph Social Preview Guidelines",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/branding/github-metadata.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_product_brief_product_brief",
+      "label": "Injel Product Brief & Philosophy",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/product-brief.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_product_brief_mvp_scope",
+      "label": "Injel MVP Scope & Non-Goals",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/product-brief.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_research_code_generation_research_codegen_vs_reflection",
+      "label": "Research: Compile-Time DI Codegen vs Startup Reflection",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/research/code-generation.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_research_code_generation_codegen_deferral_rationale",
+      "label": "Rationale for Deferring Compile-Time DI Codegen",
+      "file_type": "rationale",
+      "source_file": "/home/togpam/Gova/docs/research/code-generation.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_roadmap_framework_roadmap",
+      "label": "Injel Development Roadmap",
+      "file_type": "document",
+      "source_file": "/home/togpam/Gova/docs/roadmap.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    },
+    {
+      "id": "docs_roadmap_phases_progress",
+      "label": "Framework Phases 0-5 Implementation Progress",
+      "file_type": "concept",
+      "source_file": "/home/togpam/Gova/docs/roadmap.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Phạm Trương Thông",
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "authors_pham_truong_thong",
+      "target": "authors_injel_project",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/AUTHORS.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_injel_framework",
+      "target": "readme_ioc_container",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_injel_framework",
+      "target": "readme_environment_configuration",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_injel_framework",
+      "target": "readme_application_lifecycle",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_injel_framework",
+      "target": "readme_httpserver_engine",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_injel_framework",
+      "target": "readme_injel_cli",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_vi_gova_tertex_legacy_names",
+      "target": "docs_product_brief_product_brief",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.vi.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_vi_design_principles",
+      "target": "docs_product_brief_product_brief",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.vi.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0001_dependency_injection_adr_0001",
+      "target": "docs_product_brief_product_brief",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0001_dependency_injection_startup_reflection_di",
+      "target": "readme_ioc_container",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0001_dependency_injection_fail_fast_graph_validation",
+      "target": "readme_ioc_container",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0001-dependency-injection.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0002_interface_binding_adr_0002",
+      "target": "docs_adr_0001_dependency_injection_adr_0001",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0002-interface-binding.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0002_interface_binding_explicit_interface_binding",
+      "target": "readme_ioc_container",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0002-interface-binding.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0003_application_lifecycle_lifecycle_hooks",
+      "target": "readme_application_lifecycle",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0003_application_lifecycle_startup_rollback",
+      "target": "readme_application_lifecycle",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0003_application_lifecycle_application_state_machine",
+      "target": "readme_application_lifecycle",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0004_configuration_struct_tag_env_parser",
+      "target": "readme_environment_configuration",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0004-configuration.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0004_configuration_isolated_lookup_testing",
+      "target": "readme_environment_configuration",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0004-configuration.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0005_http_module_router_sandbox_prevalidation",
+      "target": "readme_httpserver_engine",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0005_http_module_middleware_chain",
+      "target": "readme_httpserver_engine",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0005_http_module_adr_0005",
+      "target": "docs_adr_0003_application_lifecycle_adr_0003",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0005-http-module.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0006_cli_architecture_project_scaffolding",
+      "target": "readme_injel_cli",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0006_cli_architecture_local_injel_workspaces",
+      "target": "readme_injel_cli",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0006_cli_architecture_adr_0006",
+      "target": "docs_research_code_generation_research_codegen_vs_reflection",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_research_code_generation_codegen_deferral_rationale",
+      "target": "docs_adr_0001_dependency_injection_startup_reflection_di",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/research/code-generation.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_research_code_generation_codegen_deferral_rationale",
+      "target": "docs_adr_0001_dependency_injection_adr_0001",
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/research/code-generation.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_adr_0003_application_lifecycle_startup_rollback",
+      "target": "docs_adr_0006_cli_architecture_project_scaffolding",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/home/togpam/Gova/docs/adr/0006-cli-architecture.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_product_brief_mvp_scope",
+      "target": "docs_roadmap_framework_roadmap",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/product-brief.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_roadmap_phases_progress",
+      "target": "docs_roadmap_framework_roadmap",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/roadmap.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_branding_github_metadata_github_branding",
+      "target": "readme_injel_framework",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/branding/github-metadata.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_branding_github_metadata_social_preview_guidelines",
+      "target": "authors_pham_truong_thong",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/branding/github-metadata.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "injel_core_application_architecture",
+      "label": "Injel Core Application Subsystems",
+      "nodes": [
+        "readme_ioc_container",
+        "readme_environment_configuration",
+        "readme_application_lifecycle",
+        "readme_httpserver_engine"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/README.md"
+    },
+    {
+      "id": "adr_architectural_decision_chain",
+      "label": "Architecture Decision Record Series (ADR 0001-0006)",
+      "nodes": [
+        "docs_adr_0001_dependency_injection_adr_0001",
+        "docs_adr_0002_interface_binding_adr_0002",
+        "docs_adr_0003_application_lifecycle_adr_0003",
+        "docs_adr_0004_configuration_adr_0004",
+        "docs_adr_0005_http_module_adr_0005",
+        "docs_adr_0006_cli_architecture_adr_0006"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/product-brief.md"
+    },
+    {
+      "id": "di_reflection_vs_codegen_consensus",
+      "label": "DI Strategy Architectural Consensus (Reflection vs Codegen)",
+      "nodes": [
+        "docs_adr_0001_dependency_injection_startup_reflection_di",
+        "docs_research_code_generation_research_codegen_vs_reflection",
+        "docs_adr_0006_cli_architecture_adr_0006"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/home/togpam/Gova/docs/research/code-generation.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "coverage": {
+    "/home/togpam/Gova/AUTHORS.md": 13,
+    "/home/togpam/Gova/README.md": 406,
+    "/home/togpam/Gova/README.vi.md": 372,
+    "/home/togpam/Gova/docs/adr/0001-dependency-injection.md": 155,
+    "/home/togpam/Gova/docs/adr/0002-interface-binding.md": 70,
+    "/home/togpam/Gova/docs/adr/0003-application-lifecycle.md": 102,
+    "/home/togpam/Gova/docs/adr/0004-configuration.md": 103,
+    "/home/togpam/Gova/docs/adr/0005-http-module.md": 133,
+    "/home/togpam/Gova/docs/adr/0006-cli-architecture.md": 146,
+    "/home/togpam/Gova/docs/branding/github-metadata.md": 87,
+    "/home/togpam/Gova/docs/product-brief.md": 149,
+    "/home/togpam/Gova/docs/research/code-generation.md": 59,
+    "/home/togpam/Gova/docs/roadmap.md": 166
+  }
+}
