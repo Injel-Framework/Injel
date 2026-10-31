@@ -2,6 +2,7 @@
 
 - **Trạng thái:** Accepted
 - **Ngày:** 28/10/2026
+- **Tác giả & Project Maintainer:** Phạm Trương Thông (@TogPam)
 - **Người quyết định:** Nhóm phát triển Injel
 - **Phạm vi:** Application facade & Lifecycle management
 
