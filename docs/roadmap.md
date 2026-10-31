@@ -16,7 +16,7 @@ Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành.
 | 3 | Configuration từ environment | Implemented |
 | 4 | HTTP module trên `net/http` | Implemented |
 | 5 | CLI và Project Scaffolding | Implemented |
-| 6 | Tích hợp tùy chọn: database, logging, validation | Planned |
+| 6 | Tích hợp tùy chọn: database, logging, validation | In Progress |
 | 7 | So sánh, benchmark và ổn định API | Planned |
 
 ## Giai đoạn 0 — Nền tảng
@@ -135,7 +135,22 @@ Còn mở:
 
 Chỉ thêm module khi có use case và test:
 
-- Database (`database/sql` trước, ORM sau nếu thực sự cần).
+### 6A — Database (`database/sql`) ✅ Implemented
+
+Package `database` cung cấp tích hợp `database/sql` với DI và Lifecycle:
+
+- `database.Provide(app, cfg)` đăng ký `*sql.DB` singleton vào DI container.
+- Startup health check: ping database khi `app.Start(ctx)`.
+- Graceful shutdown: `db.Close()` khi `app.Stop(ctx)`.
+- Connection pool cấu hình qua `database.Config`.
+- Không bắt buộc driver cụ thể — người dùng import driver trong application code.
+- Không có ORM, không có query builder.
+- Zero external dependencies cho framework.
+- Test đầy đủ bao gồm fake driver, lifecycle integration và concurrency tests.
+- ADR 0007 ghi nhận quyết định kiến trúc.
+
+### Còn lại trong Phase 6
+
 - Logging (`log/slog` trước).
 - Validation.
 - Các adapter cho dịch vụ ngoài.
