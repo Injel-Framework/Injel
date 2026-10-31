@@ -46,8 +46,62 @@ Injel hướng tới một mô hình thống nhất cho các vấn đề trên, 
 | Application lifecycle (start/stop, rollback, graceful shutdown) | Implemented | Thứ tự topo theo đồ thị dependency; rollback khi start lỗi |
 | Configuration từ environment | Implemented | Struct tag `env`, default, required, type conversion, isolated test |
 | HTTP module trên `net/http` | Implemented | Router sandbox pre-validation, middleware chain, OnStart/OnStop lifecycle, health check |
-| CLI / code generation | Planned | Chưa triển khai |
-| Tích hợp database, Redis, broker | Planned | Ngoài phạm vi MVP hiện tại |
+| CLI và Project Scaffolding | Implemented | `injel new`, `injel run`, `injel doctor`, zero external deps |
+| Database integration (`database/sql`) | Implemented | DI singleton, startup ping, graceful shutdown, connection pool, zero external deps |
+| Tích hợp logging, Redis, broker | Planned | Ngoài phạm vi MVP hiện tại |
+
+---
+
+## Tích hợp Database
+
+Package `database` cung cấp tích hợp `database/sql` với DI container và lifecycle của Injel.
+
+### Sử dụng nhanh
+
+```go
+import (
+    _ "github.com/lib/pq"  // import driver trong application — không phải trong Injel
+
+    injel "github.com/Injel-Framework/Injel"
+    "github.com/Injel-Framework/Injel/database"
+)
+
+func main() {
+    app := injel.New()
+
+    // Đăng ký *sql.DB vào DI với lifecycle hooks
+    if err := database.Provide(app, database.Config{
+        DriverName: "postgres",
+        DSN:        os.Getenv("DATABASE_URL"),
+        // Pool settings tùy chọn (giá trị mặc định):
+        MaxOpenConns:    25,
+        MaxIdleConns:    5,
+        ConnMaxLifetime: 30 * time.Minute,
+        ConnMaxIdleTime: 5 * time.Minute,
+        PingTimeout:     5 * time.Second,
+    }); err != nil {
+        log.Fatal(err)
+    }
+
+    // Inject *sql.DB vào component qua constructor
+    app.Provide(NewUserRepository)
+
+    // app.Start → ping database; fail nhanh nếu không kết nối được
+    // app.Stop  → đóng connection pool
+}
+
+// Repository nhận *sql.DB qua Injel DI
+func NewUserRepository(db *sql.DB) *UserRepository {
+    return &UserRepository{db: db}
+}
+```
+
+### Nguyên tắc thiết kế
+
+- Không ORM, không query builder — dùng SQL thuần hoặc thư viện tùy chọn (sqlx, bun, squirrel...).
+- Driver do application quản lý, không phải framework.
+- DSN/password không bao giờ xuất hiện trong error message hay log.
+- Lỗi có thể unwrap qua `errors.Is`/`errors.As`.
 
 ---
 

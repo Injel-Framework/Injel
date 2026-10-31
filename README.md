@@ -41,6 +41,82 @@ Injel solves these problems by providing:
 - **HTTP Server & REST Routing:** Built entirely on Go standard library `net/http` (Go 1.22+ `net/http.ServeMux`) with path variables (`r.PathValue("id")`) and zero external dependencies.
 - **Router Sandbox Pre-validation:** Catches route syntax errors and pattern conflicts early in an isolated sandbox mux, returning structured errors instead of panicking.
 - **Idiomatic Middleware Chain:** Standard Go middleware signature (`func(http.Handler) http.Handler`) featuring built-in `RequestID` (with injection protection), structured `Logging`, and `Recovery` (capturing panics and returning HTTP 500 JSON).
+- **Database Integration (`database/sql`):** Connect any SQL database through the `database` package. Registers `*sql.DB` as a DI singleton, pings on startup, and closes on graceful shutdown. Zero external dependencies — drivers are managed by the application.
+
+---
+
+## Database Integration
+
+The `database` package provides first-class `database/sql` integration with Injel's DI container and application lifecycle.
+
+### Quick Start
+
+```go
+import (
+    _ "github.com/lib/pq"  // import your driver — managed by your app, not Injel
+
+    injel "github.com/Injel-Framework/Injel"
+    "github.com/Injel-Framework/Injel/database"
+)
+
+func main() {
+    app := injel.New()
+
+    // Register *sql.DB with DI and lifecycle hooks
+    if err := database.Provide(app, database.Config{
+        DriverName: "postgres",
+        DSN:        os.Getenv("DATABASE_URL"),
+        // Optional pool settings (defaults shown):
+        MaxOpenConns:    25,
+        MaxIdleConns:    5,
+        ConnMaxLifetime: 30 * time.Minute,
+        ConnMaxIdleTime: 5 * time.Minute,
+        PingTimeout:     5 * time.Second,
+    }); err != nil {
+        log.Fatal(err)
+    }
+
+    // Inject *sql.DB into any component via constructor
+    app.Provide(NewUserRepository)
+
+    // app.Start → pings database; fails fast if unreachable
+    // app.Stop  → closes connection pool gracefully
+}
+
+// Repository receives *sql.DB through Injel DI
+func NewUserRepository(db *sql.DB) *UserRepository {
+    return &UserRepository{db: db}
+}
+```
+
+### What Injel provides
+
+| Feature | Details |
+|---------|---------|
+| DI singleton | All components injecting `*sql.DB` share the same connection pool |
+| Startup ping | `PingContext` with configurable timeout; startup fails if unreachable |
+| Graceful shutdown | `db.Close()` on `app.Stop()`, idempotent |
+| Config validation | Fails fast on missing driver/DSN, negative pool values, constraint violations |
+| Error wrapping | `*ConfigError`, `*OpenError`, `*PingError`, `*CloseError` — all support `errors.Is`/`errors.As` |
+| No credentials in errors | DSN/password never appears in error messages or logs |
+
+### What Injel does NOT provide
+
+- ORM, query builder, or schema migration — use sqlx, bun, squirrel, or any SQL library you prefer.
+- Built-in database driver — import the driver you need in your application.
+- Multiple named databases — currently only one `*sql.DB` per application context.
+
+### Supported drivers (examples)
+
+The following are application-level dependencies, not framework dependencies:
+
+```go
+import _ "github.com/lib/pq"                   // PostgreSQL
+import _ "github.com/go-sql-driver/mysql"       // MySQL
+import _ "github.com/mattn/go-sqlite3"          // SQLite (CGO)
+import _ "modernc.org/sqlite"                   // SQLite (pure Go)
+import _ "github.com/jackc/pgx/v5/stdlib"      // pgx PostgreSQL
+```
 
 ---
 
