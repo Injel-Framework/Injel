@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use Injel in your research or project, please cite it using the metadata from this file."
+title: "Injel: A Go Backend Framework"
+abstract: "Injel is a Go (Golang) backend framework inspired by Spring Boot, designed to simplify dependency injection, configuration, HTTP development, and application lifecycle management while preserving native Go simplicity."
+type: software
+authors:
+  - family-names: "Phạm"
+    given-names: "Trương Thông"
+    alias: "TogPam"
+repository-code: "https://github.com/Injel-Framework/Injel"
+url: "https://github.com/Injel-Framework/Injel"
+keywords:
+  - "go"
+  - "golang"
+  - "backend-framework"
+  - "dependency-injection"
+  - "ioc-container"
+  - "application-lifecycle"
+  - "http-server"
+  - "rest-api"
+date-released: "2026-10-31"

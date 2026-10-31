@@ -2,6 +2,7 @@
 
 - **Trạng thái:** Accepted
 - **Ngày:** 29/10/2026
+- **Tác giả & Project Maintainer:** Phạm Trương Thông (@TogPam)
 - **Người quyết định:** Nhóm phát triển Injel
 - **Phạm vi:** Package `httpserver` & REST API capabilities
 

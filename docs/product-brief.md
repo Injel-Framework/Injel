@@ -1,8 +1,12 @@
 # Định hướng sản phẩm Injel
 
-**Phiên bản:** 1.0<br>
-**Ngày:** 27/10/2026 (Cập nhật: 28/10/2026)<br>
-**Trạng thái:** Tài liệu nền tảng cho giai đoạn MVP
+- **Dự án:** Injel Framework (Injection + Element)
+- **Tác giả dự án (Project Author):** Phạm Trương Thông
+- **GitHub:** [TogPam](https://github.com/TogPam)
+- **Vai trò (Role):** Creator and Maintainer
+- **Phiên bản:** 1.0<br>
+- **Ngày:** 27/10/2026 (Cập nhật: 31/10/2026)<br>
+- **Trạng thái:** Tài liệu nền tảng cho giai đoạn MVP
 
 > Tài liệu này tổng hợp từ hai tài liệu đầu vào `GoVa_Tom_Tat_Danh_Gia_Y_Tuong.docx` và `GoVa_Plan_Trien_Khai_Cac_Buoc_Dau_Tien.docx`. Dự án ban đầu có tên là **GoVa**, sau đó từng mang tên **Tertex** trong giai đoạn đầu, và tên chính thức hiện tại là **Injel** (Injel = Injection + Element). Nội dung ở đây là bản tổng hợp kỹ thuật, không phải bản sao nguyên văn của tài liệu gốc.
 

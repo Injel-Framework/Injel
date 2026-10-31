@@ -1,6 +1,8 @@
 # Roadmap Injel
 
-**Cập nhật:** 28/10/2026
+- **Dự án:** Injel Framework
+- **Tác giả & Người duy trì (Creator & Maintainer):** Phạm Trương Thông ([@TogPam](https://github.com/TogPam))
+- **Cập nhật:** 31/10/2026
 
 Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành. Mỗi giai đoạn chỉ bắt đầu khi giai đoạn trước có test và tiêu chí hoàn thành rõ ràng.
 
