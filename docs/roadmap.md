@@ -15,7 +15,7 @@ Roadmap này mô tả thứ tự ưu tiên, không cam kết ngày hoàn thành.
 | 2 | Application lifecycle: start/stop, graceful shutdown, rollback | Implemented |
 | 3 | Configuration từ environment | Implemented |
 | 4 | HTTP module trên `net/http` | Implemented |
-| 5 | CLI và code generation | Planned / cần kiểm chứng |
+| 5 | CLI và Project Scaffolding | Implemented |
 | 6 | Tích hợp tùy chọn: database, logging, validation | Planned |
 | 7 | So sánh, benchmark và ổn định API | Planned |
 
@@ -113,16 +113,23 @@ Còn mở:
 
 **Chưa làm:** router thay thế `net/http`, request body auto-validation, OpenAPI schema generator.
 
-## Giai đoạn 5 — CLI và code generation
+## Giai đoạn 5 — CLI và Project Scaffolding
 
-**Mục tiêu:** cải thiện trải nghiệm sau khi DI API ổn định.
+**Mục tiêu:** Cung cấp công cụ dòng lệnh chính thức để khởi tạo dự án nhanh, chuẩn hóa kiến trúc backend và kiểm tra môi trường.
 
-- CLI tối thiểu để tạo hoặc chạy ứng dụng mẫu.
-- Đánh giá code generation dựa trên phản hồi và benchmark thực tế.
-- Không duy trì song song reflection và codegen nếu chưa có lý do rõ ràng.
-- Không mô phỏng annotation Java nếu không có công cụ phân tích/generate đi kèm.
+Đã có:
 
-**Trạng thái:** chưa bắt đầu; cần dữ liệu từ người dùng thực tế.
+- Executable chính thức tại `cmd/injel` với kiến trúc chuẩn Go theo ADR 0006, zero external dependencies.
+- Lệnh `injel new`: Scaffolding một project backend Injel hoàn chỉnh (`main.go`, `config`, `handler`, `go.mod`, `.env.example`, `.gitignore`, `README.md`) sử dụng template nhúng qua `embed.FS`.
+- Hỗ trợ chính sách version linh hoạt: `--injel-version` cho bản phát hành và `--local-injel` (sử dụng `go.work` tự động ignore) cho phát triển cục bộ.
+- Cơ chế rollback tự động xóa sạch file dở dang nếu xảy ra lỗi trong quá trình tạo project.
+- Lệnh `injel run`: Wrapper mỏng quanh `go run .` với context signal forwarding (SIGINT/SIGTERM) và giữ nguyên exit code.
+- Lệnh `injel doctor`: Kiểm tra Go executable, phiên bản Go (đảm bảo >= 1.24) và trạng thái Go module.
+- Lệnh `injel version` và `injel help`: Hiển thị metadata build (`ldflags`), Go runtime version và hướng dẫn lệnh.
+- Báo cáo khảo sát toàn diện về compile-time DI code generation tại `docs/research/code-generation.md`, xác nhận duy trì reflection lúc startup cho MVP vì hiệu năng < 1ms và trải nghiệm lập trình đơn giản.
+- Bộ test đầy đủ bao gồm unit tests CLI, scaffold generator và integration test xác minh project được sinh ra có thể biên dịch thành công (`go build ./...`).
+
+**Trạng thái:** hoàn thành.
 
 ## Giai đoạn 6 — Tích hợp tùy chọn
 
@@ -145,10 +152,10 @@ Mỗi tích hợp phải là module riêng, không làm nặng core.
 
 ## Thứ tự ưu tiên ngay sau phiên này
 
-1. Review và merge Phase 4 (HTTP module) vào branch `develop`.
-2. Đánh giá nhu cầu CLI tối thiểu để scaffold project (`injel new`, `injel run`).
-3. Khảo sát tích hợp database (`database/sql`, connection pool) và logging có cấu trúc (`log/slog`) dưới dạng các module mở rộng độc lập.
-4. Đo lường hiệu năng khởi động và bộ nhớ so với Go thuần và các framework khác.
+1. Review và merge Phase 5 (CLI & Project Scaffolding) vào branch `develop`.
+2. Khảo sát thiết kế module tích hợp Database (`database/sql`, connection pooling, lifecycle management cho DB connections).
+3. Khảo sát module Logging (`log/slog` integration với request context và DI container).
+4. Thực hiện benchmark so sánh hiệu năng khởi động và throughput với Go thuần và các framework khác.
 
 ## Non-goals dài hạn (trừ khi có quyết định mới)
 

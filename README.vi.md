@@ -202,6 +202,22 @@ injel/
 ├── go.mod
 ├── injel.go               # Facade công khai: App, New, Get, Start, Stop, ProvideConfig
 ├── injel_test.go
+├── cmd/
+│   └── injel/             # Injel CLI entrypoint
+│       └── main.go
+├── internal/
+│   ├── cli/               # Bộ điều phối lệnh CLI (new, run, doctor, version, help)
+│   │   ├── cli.go
+│   │   ├── help.go
+│   │   ├── version.go
+│   │   ├── doctor.go
+│   │   ├── run.go
+│   │   ├── new.go
+│   │   └── cli_test.go
+│   └── scaffold/          # Engine sinh mã nguồn dự án với embedded templates
+│       ├── scaffold.go
+│       ├── scaffold_test.go
+│       └── templates/
 ├── config/                # Module cấu hình từ biến môi trường
 │   ├── doc.go
 │   ├── config.go
@@ -213,29 +229,95 @@ injel/
 │   ├── provider.go
 │   ├── errors.go
 │   └── container_test.go
+├── httpserver/            # HTTP server & routing module dựa trên net/http
+│   ├── doc.go
+│   ├── errors.go
+│   ├── middleware.go
+│   ├── router.go
+│   ├── server.go
+│   └── server_test.go
 ├── docs/
 │   ├── product-brief.md
 │   ├── roadmap.md
 │   ├── branding/
 │   │   └── github-metadata.md
+│   ├── research/
+│   │   └── code-generation.md
 │   └── adr/
 │       ├── 0001-dependency-injection.md
 │       ├── 0002-interface-binding.md
 │       ├── 0003-application-lifecycle.md
 │       ├── 0004-configuration.md
-│       └── 0005-http-module.md
-├── examples/
-│   ├── basic/
-│   │   └── main.go
-│   └── http-api/
-│       └── main.go
-└── httpserver/            # HTTP server & routing module dựa trên net/http
-    ├── doc.go
-    ├── errors.go
-    ├── middleware.go
-    ├── router.go
-    ├── server.go
-    └── server_test.go
+│       ├── 0005-http-module.md
+│       └── 0006-cli-architecture.md
+└── examples/
+    ├── basic/
+    │   └── main.go
+    └── http-api/
+        └── main.go
+```
+
+---
+
+## Injel CLI
+
+Injel cung cấp công cụ dòng lệnh chính thức (`injel`) được xây dựng 100% bằng thư viện chuẩn Go, không kéo theo bất kỳ dependency bên thứ ba nào.
+
+### Cài đặt và biên dịch
+
+Biên dịch binary CLI cục bộ:
+
+```bash
+go build -o bin/injel ./cmd/injel
+```
+
+Hoặc cài đặt trực tiếp vào `$GOPATH/bin`:
+
+```bash
+go install ./cmd/injel
+```
+
+### Các lệnh CLI
+
+- **`injel version`**: Hiển thị phiên bản, commit hash, ngày build và thông tin Go runtime.
+- **`injel doctor`**: Kiểm tra môi trường Go (yêu cầu >= 1.24) và module hiện tại.
+- **`injel run [args...]`**: Wrapper chạy `go run .` trong thư mục module hiện tại, hỗ trợ chuyển tiếp cờ lệnh và bắt signal dừng an toàn.
+- **`injel new --name <name> --module <module>`**: Khởi tạo cấu trúc project Injel hoàn chỉnh với DI, config, HTTP routes và graceful shutdown.
+
+### Khởi tạo project mới
+
+Trong quá trình phát triển (kết nối với thư mục local Injel qua `go.work` tự động):
+
+```bash
+injel new \
+  --name my-api \
+  --module github.com/username/my-api \
+  --local-injel /path/to/Injel
+```
+
+Sử dụng phiên bản Injel đã phát hành:
+
+```bash
+injel new \
+  --name my-api \
+  --module github.com/username/my-api \
+  --injel-version v0.1.0
+```
+
+Cấu trúc dự án được tạo ra:
+
+```text
+my-api/
+├── .env.example           # Cấu hình biến môi trường mẫu
+├── .gitignore             # Git ignore chuẩn (tự động bỏ qua go.work)
+├── README.md              # Hướng dẫn chạy và phát triển
+├── go.mod                 # Khai báo Go module
+├── main.go                # Khởi động ứng dụng với DI và lifecycle
+└── internal/
+    ├── config/            # Cấu trúc AppConfig gắn thẻ struct tag env
+    │   └── config.go
+    └── handler/           # Handler REST API mẫu
+        └── hello.go
 ```
 
 ---
@@ -281,8 +363,10 @@ Injel is an independently developed Go backend framework focused on developer ex
 - [`docs/product-brief.md`](docs/product-brief.md) — định hướng sản phẩm, phạm vi MVP, tiêu chí thành công.
 - [`docs/roadmap.md`](docs/roadmap.md) — lộ trình từ core tới HTTP, configuration và CLI.
 - [`docs/branding/github-metadata.md`](docs/branding/github-metadata.md) — metadata, description và topics trên GitHub.
+- [`docs/research/code-generation.md`](docs/research/code-generation.md) — nghiên cứu: Compile-time DI Codegen vs Startup Reflection.
 - [`docs/adr/0001-dependency-injection.md`](docs/adr/0001-dependency-injection.md) — quyết định kiến trúc DI.
 - [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — quyết định kiến trúc Interface Binding.
 - [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — quyết định kiến trúc Application Lifecycle.
 - [`docs/adr/0004-configuration.md`](docs/adr/0004-configuration.md) — quyết định kiến trúc Configuration Module.
 - [`docs/adr/0005-http-module.md`](docs/adr/0005-http-module.md) — quyết định kiến trúc HTTP Server & REST API Module.
+- [`docs/adr/0006-cli-architecture.md`](docs/adr/0006-cli-architecture.md) — quyết định kiến trúc Injel CLI & Project Scaffolding.

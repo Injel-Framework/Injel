@@ -1,0 +1,83 @@
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/Injel-Framework/Injel"
+	"github.com/Injel-Framework/Injel/httpserver"
+	"{{ .ModulePath }}/internal/config"
+	"{{ .ModulePath }}/internal/handler"
+)
+
+// NewHTTPServer builds and registers all routes with standard middleware.
+func NewHTTPServer(cfg *config.AppConfig, hello *handler.HelloHandler) (*httpserver.Server, error) {
+	server := httpserver.New(
+		httpserver.WithConfig(cfg.HTTPServer),
+		httpserver.WithMiddleware(
+			httpserver.RequestID(),
+			httpserver.Logging(log.Printf),
+			httpserver.Recovery(log.Printf),
+		),
+	)
+
+	// Built-in health check endpoint: GET /health
+	if err := server.RegisterHealth(); err != nil {
+		return nil, err
+	}
+
+	// Application REST routes
+	if err := server.Handle("GET /api/v1/hello", hello); err != nil {
+		return nil, err
+	}
+
+	return server, nil
+}
+
+func main() {
+	app := injel.New()
+
+	// 1. Provide typed configuration from environment variables
+	if err := injel.ProvideConfig[config.AppConfig](app); err != nil {
+		log.Fatalf("provide config: %v", err)
+	}
+
+	// 2. Register dependencies in Injel IoC container
+	for _, provider := range []any{
+		handler.NewHelloHandler,
+		NewHTTPServer,
+	} {
+		if err := app.Provide(provider); err != nil {
+			log.Fatalf("provide component: %v", err)
+		}
+	}
+
+	// 3. Graceful shutdown on OS signal (SIGINT, SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := app.Start(ctx); err != nil {
+		log.Fatalf("start application: %v", err)
+	}
+
+	server, err := injel.Get[*httpserver.Server](app)
+	if err == nil {
+		log.Printf("Injel HTTP Server listening on %s", server.Addr())
+	}
+
+	<-ctx.Done()
+	log.Println("Shutting down HTTP server...")
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := app.Stop(stopCtx); err != nil {
+		log.Fatalf("stop application: %v", err)
+	}
+
+	log.Println("Injel application stopped gracefully.")
+}

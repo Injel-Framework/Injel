@@ -1,0 +1,51 @@
+# {{ .ProjectName }}
+
+A modern Go REST API service built with [Injel Framework](https://github.com/Injel-Framework/Injel).
+
+## Requirements
+
+- Go 1.24+
+
+## Getting Started
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Run the application:
+   ```bash
+   go run .
+   ```
+
+3. Test the endpoints:
+   ```bash
+   # Health check
+   curl http://localhost:8080/health
+
+   # Hello API
+   curl http://localhost:8080/api/v1/hello
+   ```
+
+## Project Structure
+
+```text
+{{ .ProjectName }}/
+├── .env.example
+├── .gitignore
+├── README.md
+├── go.mod
+├── main.go
+└── internal/
+    ├── config/
+    │   └── config.go    # Typed environment configuration
+    └── handler/
+        └── hello.go     # Sample REST endpoint
+```
+
+## Adding Handlers
+
+To add a new handler:
+1. Define your handler struct and constructor in `internal/handler/`.
+2. Register your constructor in `main.go` using `app.Provide(...)`.
+3. Wire the routes in `NewHTTPServer`.

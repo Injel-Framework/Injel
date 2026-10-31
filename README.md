@@ -214,6 +214,22 @@ injel/
 ├── go.mod                 # Go module definition (zero dependencies)
 ├── injel.go               # Public application facade
 ├── injel_test.go          # Application integration tests
+├── cmd/
+│   └── injel/             # Injel CLI entrypoint
+│       └── main.go
+├── internal/
+│   ├── cli/               # CLI commands: help, version, doctor, run, new
+│   │   ├── cli.go
+│   │   ├── help.go
+│   │   ├── version.go
+│   │   ├── doctor.go
+│   │   ├── run.go
+│   │   ├── new.go
+│   │   └── cli_test.go
+│   └── scaffold/          # Project scaffolding engine with embedded templates
+│       ├── scaffold.go
+│       ├── scaffold_test.go
+│       └── templates/
 ├── config/                # Environment configuration module
 │   ├── doc.go
 │   ├── config.go          # Struct tag reflection & type conversion
@@ -237,17 +253,83 @@ injel/
 │   ├── roadmap.md         # Framework development roadmap
 │   ├── branding/
 │   │   └── github-metadata.md
+│   ├── research/          # Research and architectural evaluations
+│   │   └── code-generation.md
 │   └── adr/               # Architecture Decision Records
 │       ├── 0001-dependency-injection.md
 │       ├── 0002-interface-binding.md
 │       ├── 0003-application-lifecycle.md
 │       ├── 0004-configuration.md
-│       └── 0005-http-module.md
+│       ├── 0005-http-module.md
+│       └── 0006-cli-architecture.md
 └── examples/
     ├── basic/             # DI, configuration, and lifecycle example
     │   └── main.go
     └── http-api/          # Full REST API server example
         └── main.go
+```
+
+---
+
+## Injel CLI
+
+Injel provides an official CLI tool (`injel`) built entirely with standard Go libraries and zero external dependencies.
+
+### Installation & Build
+
+Build the CLI binary locally:
+
+```bash
+go build -o bin/injel ./cmd/injel
+```
+
+Or install it into your `$GOPATH/bin`:
+
+```bash
+go install ./cmd/injel
+```
+
+### CLI Commands
+
+- **`injel version`**: Displays version, commit hash, build date, and Go runtime information.
+- **`injel doctor`**: Verifies that the Go toolchain is installed (Go >= 1.24) and detects the current module.
+- **`injel run [args...]`**: Thin, safe runner executing `go run .` in the current Go module with signal handling.
+- **`injel new --name <name> --module <module>`**: Scaffolds a new, idiomatic Injel application using embedded templates.
+
+### Creating a New Project
+
+During development (linking to a local Injel clone via an auto-ignored `go.work`):
+
+```bash
+injel new \
+  --name my-api \
+  --module github.com/username/my-api \
+  --local-injel /path/to/Injel
+```
+
+Using a published Injel release version:
+
+```bash
+injel new \
+  --name my-api \
+  --module github.com/username/my-api \
+  --injel-version v0.1.0
+```
+
+The generated project is fully configured and ready to run:
+
+```text
+my-api/
+├── .env.example           # Pre-configured environment variables
+├── .gitignore             # Standard Go gitignore (ignores go.work)
+├── README.md              # Project quickstart instructions
+├── go.mod                 # Go module definition
+├── main.go                # Application entrypoint with DI and lifecycle
+└── internal/
+    ├── config/            # Strongly typed AppConfig struct with env tags
+    │   └── config.go
+    └── handler/           # Sample REST API handler
+        └── hello.go
 ```
 
 ---
@@ -309,11 +391,13 @@ Injel is an independently developed Go backend framework focused on developer ex
 - [`docs/product-brief.md`](docs/product-brief.md) — Product brief and design philosophy.
 - [`docs/roadmap.md`](docs/roadmap.md) — Framework roadmap and milestones.
 - [`docs/branding/github-metadata.md`](docs/branding/github-metadata.md) — GitHub metadata, topics, and description.
+- [`docs/research/code-generation.md`](docs/research/code-generation.md) — Research: Compile-time DI Codegen vs Startup Reflection.
 - [`docs/adr/0001-dependency-injection.md`](docs/adr/0001-dependency-injection.md) — ADR: Dependency Injection.
 - [`docs/adr/0002-interface-binding.md`](docs/adr/0002-interface-binding.md) — ADR: Interface Binding.
 - [`docs/adr/0003-application-lifecycle.md`](docs/adr/0003-application-lifecycle.md) — ADR: Application Lifecycle.
 - [`docs/adr/0004-configuration.md`](docs/adr/0004-configuration.md) — ADR: Configuration Module.
 - [`docs/adr/0005-http-module.md`](docs/adr/0005-http-module.md) — ADR: HTTP Server & REST API.
+- [`docs/adr/0006-cli-architecture.md`](docs/adr/0006-cli-architecture.md) — ADR: Injel CLI Architecture & Scaffolding.
 
 ---
 
